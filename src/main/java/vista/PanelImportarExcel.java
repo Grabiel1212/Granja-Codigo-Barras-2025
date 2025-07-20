@@ -1,9 +1,13 @@
 package vista;
 
 import service.GeneradorService;
+import service.ImportadorService;
+import model.ProductoExcel;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import util.ConectarBD;
+import helpers.ValidadorEAN13;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -14,11 +18,14 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.Vector;
-import java.awt.Font;
-import java.awt.Color;
-import java.util.HashSet;
-import java.util.Set;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
+import java.util.List;
+import service.ImportResult;
 
 public class PanelImportarExcel extends JDialog {
 
@@ -30,7 +37,11 @@ public class PanelImportarExcel extends JDialog {
     private Workbook workbook;
     private Sheet sheet;
     private int columnaCodigoBarras = -1;
+    private int columnaNombre = -1;
     private File archivoSeleccionado;
+    private Set<String> codigosExistentesBD = new HashSet<>();
+    private String nombreArchivoActual;
+    private ImportadorService importadorService = new ImportadorService();
 
     public PanelImportarExcel(GeneradorGU parent) {
         super(parent, "Importar desde Excel", true);
@@ -46,7 +57,8 @@ public class PanelImportarExcel extends JDialog {
 
         // Título
         JLabel lblTitulo = new JLabel("Importar desde Excel", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 22));
+
         lblTitulo.setForeground(parent.COLOR_PRIMARIO);
         mainPanel.add(lblTitulo, BorderLayout.NORTH);
 
@@ -67,21 +79,21 @@ public class PanelImportarExcel extends JDialog {
         JPanel formatoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         formatoPanel.setBackground(parent.COLOR_FONDO);
         formatoPanel.add(new JLabel("Formato de código:"));
-        cmbFormato = new JComboBox<>(new String[]{"CODE_128", "EAN_13"});
+        cmbFormato = new JComboBox<>(new String[]{"EAN_13"});
         cmbFormato.setPreferredSize(new Dimension(150, 30));
         formatoPanel.add(cmbFormato);
         controlPanel.add(formatoPanel);
 
         // Botón para seleccionar archivo
         JButton btnSeleccionar = new JButton("Seleccionar Archivo Excel");
-        btnSeleccionar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnSeleccionar.setBackground(new Color(52, 152, 219));  // Azul vibrante
-        btnSeleccionar.setForeground(Color.WHITE);              // Texto blanco
-        btnSeleccionar.setFocusPainted(false);                 // Sin borde de foco
-        btnSeleccionar.setOpaque(true);                        // NECESARIO para pintar fondo
-        btnSeleccionar.setContentAreaFilled(true);             // NECESARIO para pintar fondo
-        btnSeleccionar.setBorderPainted(false);                // Opcional para estética
+        btnSeleccionar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+        btnSeleccionar.setBackground(new java.awt.Color(52, 152, 219));
+        btnSeleccionar.setForeground(java.awt.Color.WHITE);
 
+        btnSeleccionar.setFocusPainted(false);
+        btnSeleccionar.setOpaque(true);
+        btnSeleccionar.setContentAreaFilled(true);
+        btnSeleccionar.setBorderPainted(false);
         btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
         btnSeleccionar.setPreferredSize(new Dimension(250, 40));
         controlPanel.add(btnSeleccionar);
@@ -99,23 +111,25 @@ public class PanelImportarExcel extends JDialog {
         // Modelo de tabla
         tableModel = new DefaultTableModel();
         tablaPreview = new JTable(tableModel);
-        tablaPreview.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tablaPreview.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13));
         tablaPreview.setRowHeight(28);
-        tablaPreview.setGridColor(new Color(200, 200, 200)); // Color de líneas entre celdas
-        tablaPreview.setBackground(Color.WHITE);
-        tablaPreview.setForeground(Color.BLACK);
-        tablaPreview.setSelectionBackground(new Color(52, 152, 219)); // Azul para fila seleccionada
-        tablaPreview.setSelectionForeground(Color.WHITE);
+        tablaPreview.setGridColor(new java.awt.Color(200, 200, 200));
+        tablaPreview.setBackground(java.awt.Color.WHITE);
+        tablaPreview.setForeground(java.awt.Color.BLACK);
+        tablaPreview.setSelectionBackground(new java.awt.Color(52, 152, 219));
+        tablaPreview.setSelectionForeground(java.awt.Color.WHITE);
+
         tablaPreview.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-// Cabecera de tabla
+        // Cabecera de tabla
         JTableHeader header = tablaPreview.getTableHeader();
-        header.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        header.setBackground(parent.COLOR_PRIMARIO); // Azul vibrante
-        header.setForeground(Color.WHITE); // Texto blanco
+        header.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+
+        header.setBackground(parent.COLOR_PRIMARIO);
+        header.setForeground(java.awt.Color.WHITE);
+
         header.setOpaque(true);
 
-// Forzar que se pinte el fondo
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -124,9 +138,11 @@ public class PanelImportarExcel extends JDialog {
                 JLabel label = (JLabel) super.getTableCellRendererComponent(
                         table, value, isSelected, hasFocus, row, column);
 
-                label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+                label.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+
                 label.setBackground(parent.COLOR_PRIMARIO);
-                label.setForeground(Color.WHITE);
+                label.setForeground(java.awt.Color.WHITE);
+
                 label.setHorizontalAlignment(SwingConstants.CENTER);
                 label.setOpaque(true);
                 return label;
@@ -142,9 +158,10 @@ public class PanelImportarExcel extends JDialog {
         actionPanel.setBackground(parent.COLOR_FONDO);
 
         JButton btnProcesar = new JButton("Generar Códigos");
-        btnProcesar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnProcesar.setBackground(new Color(46, 204, 113)); // Verde
-        btnProcesar.setForeground(Color.WHITE);
+        btnProcesar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+        btnProcesar.setBackground(new java.awt.Color(46, 204, 113));
+        btnProcesar.setForeground(java.awt.Color.WHITE);
+
         btnProcesar.setFocusPainted(false);
         btnProcesar.setOpaque(true);
         btnProcesar.setContentAreaFilled(true);
@@ -154,9 +171,11 @@ public class PanelImportarExcel extends JDialog {
         actionPanel.add(btnProcesar);
 
         JButton btnGuardar = new JButton("Guardar Cambios");
-        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnGuardar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+
         btnGuardar.setBackground(parent.COLOR_PRIMARIO);
-        btnGuardar.setForeground(Color.WHITE);
+        btnGuardar.setForeground(java.awt.Color.WHITE);
+
         btnGuardar.setFocusPainted(false);
         btnGuardar.setOpaque(true);
         btnGuardar.setContentAreaFilled(true);
@@ -166,9 +185,9 @@ public class PanelImportarExcel extends JDialog {
         actionPanel.add(btnGuardar);
 
         JButton btnCerrar = new JButton("Cerrar");
-        btnCerrar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnCerrar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
         btnCerrar.setBackground(parent.COLOR_ACENTO);
-        btnCerrar.setForeground(Color.WHITE);
+        btnCerrar.setForeground(java.awt.Color.WHITE);
         btnCerrar.setFocusPainted(false);
         btnCerrar.setOpaque(true);
         btnCerrar.setContentAreaFilled(true);
@@ -207,6 +226,7 @@ public class PanelImportarExcel extends JDialog {
         progressBar.setVisible(true);
         progressBar.setIndeterminate(true);
         progressBar.setString("Cargando datos del Excel...");
+        nombreArchivoActual = archivo.getName();
 
         new SwingWorker<Void, Void>() {
             @Override
@@ -219,18 +239,24 @@ public class PanelImportarExcel extends JDialog {
 
                     sheet = workbook.getSheetAt(0);
                     columnaCodigoBarras = -1;
+                    columnaNombre = -1;
 
-                    // Buscar columna "Código Barras"
+                    // Buscar columnas necesarias
                     Row headerRow = sheet.getRow(0);
                     for (Cell cell : headerRow) {
-                        if ("Código Barras".equalsIgnoreCase(cell.getStringCellValue().trim())) {
+                        String header = cell.getStringCellValue().trim().toLowerCase();
+                        if (header.contains("código") || header.contains("codigo")) {
                             columnaCodigoBarras = cell.getColumnIndex();
-                            break;
+                        } else if (header.contains("producto") || header.contains("nombre")) {
+                            columnaNombre = cell.getColumnIndex();
                         }
                     }
 
                     if (columnaCodigoBarras == -1) {
                         throw new Exception("No se encontró la columna 'Código Barras'");
+                    }
+                    if (columnaNombre == -1) {
+                        throw new Exception("No se encontró la columna 'Nombre' o 'Producto'");
                     }
 
                     // Preparar datos para la tabla
@@ -240,7 +266,7 @@ public class PanelImportarExcel extends JDialog {
                     }
 
                     Vector<Vector<Object>> data = new Vector<>();
-                    int rowLimit = Math.min(sheet.getLastRowNum(), 100); // Limitar a 100 filas para previsualización
+                    int rowLimit = Math.min(sheet.getLastRowNum(), 10000); // Limitar a 100 filas para previsualización
 
                     for (int i = 1; i <= rowLimit; i++) {
                         Row row = sheet.getRow(i);
@@ -276,6 +302,9 @@ public class PanelImportarExcel extends JDialog {
                         data.add(rowData);
                     }
 
+                    // Cargar códigos existentes de la base de datos
+                    cargarCodigosExistentesBD();
+
                     // Actualizar tabla en el EDT
                     SwingUtilities.invokeLater(() -> {
                         tableModel.setDataVector(data, columnNames);
@@ -297,13 +326,49 @@ public class PanelImportarExcel extends JDialog {
         }.execute();
     }
 
+    private void cargarCodigosExistentesBD() {
+        Connection conn = null;
+        try {
+            conn = ConectarBD.obtenerConexion();
+            String sql = "SELECT Codigo FROM CodigosGenerados";
+            try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+
+                while (rs.next()) {
+                    codigosExistentesBD.add(rs.getString("Codigo"));
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar códigos existentes: " + e.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            ConectarBD.cerrarConexion(conn);
+        }
+    }
+
+    private String obtenerValorCelda(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                return String.valueOf(cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return "";
+        }
+    }
+
     private void resaltarColumnaCodigo() {
-        // Resaltar la columna de código de barras
         if (columnaCodigoBarras >= 0) {
             TableColumnModel columnModel = tablaPreview.getColumnModel();
             TableColumn column = columnModel.getColumn(columnaCodigoBarras);
 
-            // Configurar renderizador personalizado
             column.setCellRenderer(new DefaultTableCellRenderer() {
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value,
@@ -312,13 +377,14 @@ public class PanelImportarExcel extends JDialog {
 
                     String codigo = value != null ? value.toString() : "";
                     if (codigo.isEmpty()) {
-                        c.setBackground(new Color(255, 230, 230)); // Rojo claro para vacíos
+                        c.setBackground(new java.awt.Color(255, 230, 230));
+
                         setText("SIN CÓDIGO");
-                        setForeground(Color.RED);
+                        setForeground(java.awt.Color.RED);
                     } else {
-                        c.setBackground(new Color(230, 255, 230)); // Verde claro para existentes
+                        c.setBackground(new java.awt.Color(230, 255, 230));
                         setText(codigo);
-                        setForeground(Color.BLACK);
+                        setForeground(java.awt.Color.BLACK);
                     }
 
                     if (isSelected) {
@@ -335,9 +401,8 @@ public class PanelImportarExcel extends JDialog {
     private void resizeTableColumns() {
         for (int column = 0; column < tablaPreview.getColumnCount(); column++) {
             TableColumn tableColumn = tablaPreview.getColumnModel().getColumn(column);
-            int preferredWidth = 80; // Ancho mínimo
+            int preferredWidth = 80;
 
-            // Calcular ancho máximo del contenido de la columna
             for (int row = 0; row < tablaPreview.getRowCount(); row++) {
                 TableCellRenderer cellRenderer = tablaPreview.getCellRenderer(row, column);
                 Component comp = tablaPreview.prepareRenderer(cellRenderer, row, column);
@@ -345,7 +410,6 @@ public class PanelImportarExcel extends JDialog {
                 preferredWidth = Math.max(preferredWidth, width);
             }
 
-            // Limitar el ancho máximo
             preferredWidth = Math.min(preferredWidth, 300);
             tableColumn.setPreferredWidth(preferredWidth);
         }
@@ -367,27 +431,8 @@ public class PanelImportarExcel extends JDialog {
             @Override
             protected Integer doInBackground() {
                 int contadorGenerados = 0;
+                Set<String> codigosEnArchivo = new HashSet<>(); // Para evitar duplicados en el mismo archivo
 
-                // 🔒 Guardar códigos ya existentes para evitar duplicados
-                Set<String> codigosExistentes = new HashSet<>();
-
-                // Paso 1: recorrer todas las filas y guardar códigos que ya existen
-                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                    Row row = sheet.getRow(i);
-                    if (row == null) {
-                        continue;
-                    }
-
-                    Cell cell = row.getCell(columnaCodigoBarras);
-                    if (cell != null && cell.getCellType() == CellType.STRING) {
-                        String codigoExistente = cell.getStringCellValue().trim();
-                        if (!codigoExistente.isEmpty()) {
-                            codigosExistentes.add(codigoExistente);
-                        }
-                    }
-                }
-
-                // Paso 2: generar nuevos códigos donde falten, evitando duplicados
                 try {
                     for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                         Row row = sheet.getRow(i);
@@ -396,44 +441,50 @@ public class PanelImportarExcel extends JDialog {
                         }
 
                         Cell codigoCell = row.getCell(columnaCodigoBarras);
-                        String codigo = "";
+                        String codigoActual = obtenerValorCelda(codigoCell);
 
-                        boolean necesitaCodigo = codigoCell == null
-                                || codigoCell.getCellType() == CellType.BLANK
-                                || (codigoCell.getCellType() == CellType.STRING
-                                && codigoCell.getStringCellValue().trim().isEmpty());
-
-                        if (necesitaCodigo) {
-                            // Generar código único
+                        // Si la celda está vacía, generar un nuevo código
+                        if (codigoActual.isEmpty()) {
                             String formato = cmbFormato.getSelectedItem().toString();
+                            String nuevoCodigo;
+                            boolean esUnico;
+
                             do {
                                 if ("EAN_13".equals(formato)) {
-                                    codigo = GeneradorService.generarEAN13();
+                                    nuevoCodigo = GeneradorService.generarEAN13();
                                 } else {
-                                    codigo = GeneradorService.generarCodigoUnico();
+                                    nuevoCodigo = GeneradorService.generarCodigoUnico();
                                 }
-                            } while (codigosExistentes.contains(codigo)); // Repetir si ya existe
 
-                            codigosExistentes.add(codigo); // Añadir para evitar duplicados siguientes
+                                // Verificar unicidad
+                                esUnico = !codigosExistentesBD.contains(nuevoCodigo)
+                                        && !codigosEnArchivo.contains(nuevoCodigo);
 
+                            } while (!esUnico);
+
+                            // Actualizar la celda
                             if (codigoCell == null) {
                                 codigoCell = row.createCell(columnaCodigoBarras);
                             }
-                            codigoCell.setCellValue(codigo);
+                            codigoCell.setCellValue(nuevoCodigo);
+                            codigosEnArchivo.add(nuevoCodigo);
                             contadorGenerados++;
 
-                            // Actualizar tabla si es visible (solo primeras 100 filas)
+                            // Actualizar vista previa
                             if (i <= 100) {
-                                String codigoFinal = codigo;
-                                int filaFinal = i;
-                                int columnaFinal = columnaCodigoBarras;
-
+                                final String codigoFinal = nuevoCodigo;
+                                final int rowIndex = i; // crear una copia final
                                 SwingUtilities.invokeLater(() -> {
-                                    tableModel.setValueAt(codigoFinal, filaFinal - 1, columnaFinal);
+                                    tableModel.setValueAt(codigoFinal, rowIndex - 1, columnaCodigoBarras);
                                 });
                             }
+
+                        } else {
+                            // Si ya tiene código, agregar a la lista para verificar duplicados
+                            codigosEnArchivo.add(codigoActual);
                         }
                     }
+                    return contadorGenerados;
                 } catch (Exception e) {
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(PanelImportarExcel.this,
@@ -442,8 +493,6 @@ public class PanelImportarExcel extends JDialog {
                     });
                     return -1;
                 }
-
-                return contadorGenerados;
             }
 
             @Override
@@ -494,14 +543,19 @@ public class PanelImportarExcel extends JDialog {
                 @Override
                 protected Void doInBackground() {
                     try {
+                        // Guardar archivo Excel
                         FileOutputStream outputStream = new FileOutputStream(fileToSave);
                         workbook.write(outputStream);
                         workbook.close();
                         outputStream.close();
 
+                        // Guardar datos en base de datos
+                        guardarEnBaseDatos();
+
                         SwingUtilities.invokeLater(() -> {
                             JOptionPane.showMessageDialog(PanelImportarExcel.this,
-                                    "Archivo guardado exitosamente en:\n" + fileToSave.getAbsolutePath(),
+                                    "Archivo guardado exitosamente en:\n" + fileToSave.getAbsolutePath()
+                                    + "\nDatos guardados en base de datos",
                                     "Guardado Completado", JOptionPane.INFORMATION_MESSAGE);
                         });
 
@@ -520,6 +574,43 @@ public class PanelImportarExcel extends JDialog {
                     progressBar.setVisible(false);
                 }
             }.execute();
+        }
+    }
+
+    private void guardarEnBaseDatos() {
+        List<ProductoExcel> productos = new ArrayList<>();
+
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+
+            Cell nombreCell = row.getCell(columnaNombre);
+            Cell codigoCell = row.getCell(columnaCodigoBarras);
+
+            String nombre = obtenerValorCelda(nombreCell);
+            String codigo = obtenerValorCelda(codigoCell);
+
+            if (!nombre.isEmpty() && !codigo.isEmpty()) {
+                productos.add(new ProductoExcel(nombre, codigo));
+            }
+        }
+
+        ImportResult resultado = importadorService.importarProductosDesdeExcel(
+                nombreArchivoActual, productos
+        );
+
+        if (!resultado.getErrores().isEmpty()) {
+            StringBuilder errores = new StringBuilder();
+            for (String error : resultado.getErrores()) {
+                errores.append("• ").append(error).append("\n");
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Se importaron " + resultado.getProductosImportados() + " productos\n"
+                    + "Errores:\n" + errores.toString(),
+                    "Importación con errores", JOptionPane.WARNING_MESSAGE);
         }
     }
 }
