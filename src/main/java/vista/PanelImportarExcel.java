@@ -29,7 +29,6 @@ import service.ImportResult;
 
 public class PanelImportarExcel extends JDialog {
 
-    
     private final GeneradorGU parent;
     private JProgressBar progressBar;
     private JComboBox<String> cmbFormato;
@@ -43,10 +42,10 @@ public class PanelImportarExcel extends JDialog {
     private Set<String> codigosExistentesBD = new HashSet<>();
     private String nombreArchivoActual;
     private ImportadorService importadorService = new ImportadorService();
-    private DefaultTableModel modeloHojas;
-    private JTable tablaHojas;
+    private JComboBox<String> cmbHojas; // Cambiado de tabla a combo box
 
     private static class ColumnasHoja {
+
         int colCodigo;
         int colNombre;
 
@@ -65,10 +64,9 @@ public class PanelImportarExcel extends JDialog {
 
         // Configurar colores profesionales
         java.awt.Color colorFondo = new java.awt.Color(245, 245, 245);
-java.awt.Color colorPrimario = new java.awt.Color(41, 128, 185);
-java.awt.Color colorBorde = new java.awt.Color(200, 200, 200);
-java.awt.Color colorTexto = new java.awt.Color(50, 50, 50);
-
+        java.awt.Color colorPrimario = new java.awt.Color(41, 128, 185);
+        java.awt.Color colorBorde = new java.awt.Color(200, 200, 200);
+        java.awt.Color colorTexto = new java.awt.Color(50, 50, 50);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
@@ -76,7 +74,7 @@ java.awt.Color colorTexto = new java.awt.Color(50, 50, 50);
 
         // Título con estilo profesional
         JLabel lblTitulo = new JLabel("Importar desde Excel", SwingConstants.CENTER);
-       lblTitulo.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 24));
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 24));
 
         lblTitulo.setForeground(colorPrimario);
         lblTitulo.setBorder(new EmptyBorder(0, 0, 15, 0));
@@ -87,13 +85,13 @@ java.awt.Color colorTexto = new java.awt.Color(50, 50, 50);
 
         // Panel de configuración con borde elegante
         JPanel configPanel = new JPanel(new GridBagLayout());
-    configPanel.setBackground(java.awt.Color.WHITE);
+        configPanel.setBackground(java.awt.Color.WHITE);
 
         configPanel.setBorder(new CompoundBorder(
-            new LineBorder(colorBorde, 1),
-            new EmptyBorder(10, 15, 15, 15)
+                new LineBorder(colorBorde, 1),
+                new EmptyBorder(10, 15, 15, 15)
         ));
-        
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 10, 5);
         gbc.anchor = GridBagConstraints.WEST;
@@ -103,34 +101,24 @@ java.awt.Color colorTexto = new java.awt.Color(50, 50, 50);
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-        JLabel lblHojas = new JLabel("Hojas del documento:");
+        JLabel lblHojas = new JLabel("Seleccione una hoja:");
         lblHojas.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
-
         lblHojas.setForeground(colorTexto);
         configPanel.add(lblHojas, gbc);
 
-        modeloHojas = new DefaultTableModel(new Object[]{"Procesar", "Hoja"}, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 0 ? Boolean.class : String.class;
-            }
-        };
-
-        tablaHojas = new JTable(modeloHojas);
-        tablaHojas.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13));
-
-        tablaHojas.setRowHeight(28);
-        tablaHojas.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
-        tablaHojas.getColumnModel().getColumn(0).setPreferredWidth(60);
-        tablaHojas.getColumnModel().getColumn(1).setPreferredWidth(200);
-        tablaHojas.setGridColor(new java.awt.Color(240, 240, 240));
-        tablaHojas.setShowVerticalLines(true);
-        tablaHojas.setShowHorizontalLines(true);
-
-        JScrollPane scrollHojas = new JScrollPane(tablaHojas);
-        scrollHojas.setPreferredSize(new Dimension(300, 120));
+        // Cambiamos a combo box para selección única
+        cmbHojas = new JComboBox<>();
+        cmbHojas.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 13));
+        cmbHojas.setPreferredSize(new Dimension(300, 30));
         gbc.gridy = 1;
-        configPanel.add(scrollHojas, gbc);
+        configPanel.add(cmbHojas, gbc);
+
+        // Listener para cambiar la previsualización al seleccionar hoja
+        cmbHojas.addActionListener(e -> {
+            if (cmbHojas.getSelectedItem() != null && workbook != null) {
+                cargarDatosHoja((String) cmbHojas.getSelectedItem());
+            }
+        });
 
         // Sección de formato
         gbc.gridy = 2;
@@ -150,24 +138,24 @@ java.awt.Color colorTexto = new java.awt.Color(50, 50, 50);
         gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.insets = new Insets(15, 5, 5, 5);
-       JButton btnSeleccionar = new JButton("Seleccionar Archivo Excel");
-btnSeleccionar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
-btnSeleccionar.setBackground(colorPrimario);
-btnSeleccionar.setForeground(java.awt.Color.WHITE);
-btnSeleccionar.setFocusPainted(false);
-btnSeleccionar.setOpaque(true); // ✅ Asegura que el fondo se pinte completo
-btnSeleccionar.setContentAreaFilled(true); // ✅ Rellena el área del botón completamente
-btnSeleccionar.setBorderPainted(false); // ✅ Quita bordes por defecto del sistema
-btnSeleccionar.setBorder(new EmptyBorder(10, 20, 10, 20)); // Padding interno
-btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
+        JButton btnSeleccionar = new JButton("Seleccionar Archivo Excel");
+        btnSeleccionar.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+        btnSeleccionar.setBackground(colorPrimario);
+        btnSeleccionar.setForeground(java.awt.Color.WHITE);
+        btnSeleccionar.setFocusPainted(false);
+        btnSeleccionar.setOpaque(true);
+        btnSeleccionar.setContentAreaFilled(true);
+        btnSeleccionar.setBorderPainted(false);
+        btnSeleccionar.setBorder(new EmptyBorder(10, 20, 10, 20));
+        btnSeleccionar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
 
-        
         // Efecto hover para el botón
         btnSeleccionar.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 btnSeleccionar.setBackground(colorPrimario.darker());
             }
+
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 btnSeleccionar.setBackground(colorPrimario);
             }
@@ -180,15 +168,15 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
         JPanel previewPanel = new JPanel(new BorderLayout());
         previewPanel.setBackground(colorFondo);
         previewPanel.setBorder(new CompoundBorder(
-            new EmptyBorder(10, 0, 0, 0),
-            new TitledBorder(
-                new LineBorder(colorBorde, 1),
-                "Previsualización de datos",
-                TitledBorder.LEADING,
-                TitledBorder.TOP,
-                new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14),
-                colorTexto
-            )
+                new EmptyBorder(10, 0, 0, 0),
+                new TitledBorder(
+                        new LineBorder(colorBorde, 1),
+                        "Previsualización de datos",
+                        TitledBorder.LEADING,
+                        TitledBorder.TOP,
+                        new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14),
+                        colorTexto
+                )
         ));
 
         tableModel = new DefaultTableModel();
@@ -212,7 +200,7 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
-                                                           boolean isSelected, boolean hasFocus, int row, int column) {
+                    boolean isSelected, boolean hasFocus, int row, int column) {
                 JLabel label = (JLabel) super.getTableCellRendererComponent(
                         table, value, isSelected, hasFocus, row, column);
                 label.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
@@ -263,25 +251,21 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
 
         add(mainPanel);
     }
-    
-  private JButton crearBotonAccion(String texto, java.awt.Color color) {
-    JButton boton = new JButton(texto);
-    boton.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
-    boton.setBackground(color);
-    boton.setForeground(java.awt.Color.WHITE);
-    boton.setFocusPainted(false);
-    boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    boton.setOpaque(true); // Evita transparencias
-    boton.setContentAreaFilled(true); // Fondo completamente lleno
-    boton.setBorderPainted(false); // Sin borde externo
-    boton.setBorder(new EmptyBorder(12, 20, 12, 20)); // Espaciado interno
 
-    return boton;
-}
+    private JButton crearBotonAccion(String texto, java.awt.Color color) {
+        JButton boton = new JButton(texto);
+        boton.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+        boton.setBackground(color);
+        boton.setForeground(java.awt.Color.WHITE);
+        boton.setFocusPainted(false);
+        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        boton.setOpaque(true);
+        boton.setContentAreaFilled(true);
+        boton.setBorderPainted(false);
+        boton.setBorder(new EmptyBorder(12, 20, 12, 20));
 
-    
-    
-
+        return boton;
+    }
 
     private void seleccionarArchivoExcel() {
         JFileChooser fileChooser = new JFileChooser();
@@ -305,24 +289,54 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
-                importadorService.actualizarCache(); // Actualizar caché antes de procesar
+                importadorService.actualizarCache();
 
                 try (FileInputStream inputStream = new FileInputStream(archivo)) {
                     workbook = archivo.getName().endsWith(".xlsx")
                             ? new XSSFWorkbook(inputStream)
                             : new HSSFWorkbook(inputStream);
 
-                    // ===== NUEVO: Cargar lista de hojas =====
+                    // Cargar nombres de hojas en el combo
                     SwingUtilities.invokeLater(() -> {
-                        modeloHojas.setRowCount(0); // Limpiar tabla existente
+                        cmbHojas.removeAllItems();
                         for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                            String nombreHoja = workbook.getSheetName(i);
-                            // Marcar la primera hoja por defecto
-                            modeloHojas.addRow(new Object[]{i == 0, nombreHoja});
+                            cmbHojas.addItem(workbook.getSheetName(i));
+                        }
+                        // Seleccionar la primera hoja por defecto
+                        if (workbook.getNumberOfSheets() > 0) {
+                            cmbHojas.setSelectedIndex(0);
                         }
                     });
 
-                    sheet = workbook.getSheetAt(0);
+                } catch (Exception e) {
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(PanelImportarExcel.this,
+                                "Error: " + e.getMessage(),
+                                "Error al cargar Excel", JOptionPane.ERROR_MESSAGE);
+                        progressBar.setVisible(false);
+                    });
+                }
+
+                return null;
+            }
+        }.execute();
+    }
+
+    // Nuevo método para cargar datos de una hoja específica
+    private void cargarDatosHoja(String nombreHoja) {
+        progressBar.setVisible(true);
+        progressBar.setIndeterminate(true);
+        progressBar.setString("Cargando hoja...");
+
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                try {
+                    sheet = workbook.getSheet(nombreHoja);
+                    if (sheet == null) {
+                        throw new Exception("Hoja no encontrada: " + nombreHoja);
+                    }
+
                     columnaCodigoBarras = -1;
                     columnaNombre = -1;
 
@@ -337,7 +351,7 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
                         String header = cell.getStringCellValue().trim().toLowerCase();
                         if (header.contains("código") || header.contains("codigo")) {
                             columnaCodigoBarras = cell.getColumnIndex();
-                        } else if (header.contains("producto") || header.contains("nombre")) {
+                        } else if (header.contains("producto") || header.contains("descripcion")) {
                             columnaNombre = cell.getColumnIndex();
                         }
                     }
@@ -400,17 +414,16 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(PanelImportarExcel.this,
                                 "Error: " + e.getMessage(),
-                                "Error al cargar Excel", JOptionPane.ERROR_MESSAGE);
+                                "Error al cargar hoja", JOptionPane.ERROR_MESSAGE);
                         progressBar.setVisible(false);
                     });
                 }
-
                 return null;
             }
         }.execute();
     }
 
-// ===== NUEVO: Método para buscar columnas en una hoja =====
+// Método para buscar columnas en una hoja
     private ColumnasHoja buscarColumnas(Sheet sheet) {
         Row headerRow = sheet.getRow(0);
         if (headerRow == null) {
@@ -424,7 +437,7 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
             String header = cell.getStringCellValue().trim().toLowerCase();
             if (header.contains("código") || header.contains("codigo")) {
                 colCodigo = cell.getColumnIndex();
-            } else if (header.contains("producto") || header.contains("nombre")) {
+            } else if (header.contains("producto") || header.contains("descripcion")) {
                 colNombre = cell.getColumnIndex();
             }
         }
@@ -533,19 +546,11 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
             return;
         }
 
-        // ===== NUEVO: Obtener hojas seleccionadas =====
-        List<String> hojasSeleccionadas = new ArrayList<>();
-        for (int i = 0; i < modeloHojas.getRowCount(); i++) {
-            Boolean seleccionada = (Boolean) modeloHojas.getValueAt(i, 0);
-            if (seleccionada != null && seleccionada) {
-                String nombreHoja = (String) modeloHojas.getValueAt(i, 1);
-                hojasSeleccionadas.add(nombreHoja);
-            }
-        }
-
-        if (hojasSeleccionadas.isEmpty()) {
+        // Obtener la hoja seleccionada
+        String nombreHoja = (String) cmbHojas.getSelectedItem();
+        if (nombreHoja == null) {
             JOptionPane.showMessageDialog(this,
-                    "Seleccione al menos una hoja",
+                    "Seleccione una hoja",
                     "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -562,65 +567,68 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
                 Set<String> codigosEnArchivo = new HashSet<>();
 
                 try {
-                    for (String nombreHoja : hojasSeleccionadas) {
-                        Sheet sheet = workbook.getSheet(nombreHoja);
-                        if (sheet == null) {
+                    Sheet sheet = workbook.getSheet(nombreHoja);
+                    if (sheet == null) {
+                        throw new Exception("Hoja no encontrada: " + nombreHoja);
+                    }
+
+                    ColumnasHoja columnas = buscarColumnas(sheet);
+                    if (columnas == null) {
+                        throw new Exception("La hoja no tiene las columnas requeridas");
+                    }
+
+                    for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                        Row row = sheet.getRow(i);
+                        if (row == null) {
                             continue;
                         }
 
-                        ColumnasHoja columnas = buscarColumnas(sheet);
-                        if (columnas == null) {
-                            JOptionPane.showMessageDialog(PanelImportarExcel.this,
-                                    "Hoja '" + nombreHoja + "' no tiene las columnas requeridas",
-                                    "Error en hoja", JOptionPane.WARNING_MESSAGE);
+                        // Verificar si la fila tiene datos
+                        Cell nombreCell = row.getCell(columnas.colNombre);
+                        String nombreActual = obtenerValorCelda(nombreCell);
+
+                        // Si el nombre está vacío, considerar fila vacía y saltar
+                        if (nombreActual == null || nombreActual.trim().isEmpty()) {
                             continue;
                         }
 
-                        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                            Row row = sheet.getRow(i);
-                            if (row == null) {
-                                continue;
-                            }
+                        Cell codigoCell = row.getCell(columnas.colCodigo);
+                        String codigoActual = obtenerValorCelda(codigoCell);
 
-                            Cell codigoCell = row.getCell(columnas.colCodigo);
-                            String codigoActual = obtenerValorCelda(codigoCell);
+                        if (codigoActual.isEmpty()) {
+                            String formato = cmbFormato.getSelectedItem().toString();
+                            String nuevoCodigo;
+                            boolean esUnico;
 
-                            if (codigoActual.isEmpty()) {
-                                String formato = cmbFormato.getSelectedItem().toString();
-                                String nuevoCodigo;
-                                boolean esUnico;
-
-                                do {
-                                    if ("EAN_13".equals(formato)) {
-                                        nuevoCodigo = GeneradorService.generarEAN13();
-                                    } else {
-                                        nuevoCodigo = GeneradorService.generarCodigoUnico();
-                                    }
-
-                                    esUnico = !codigosExistentesBD.contains(nuevoCodigo)
-                                            && !codigosEnArchivo.contains(nuevoCodigo);
-
-                                } while (!esUnico);
-
-                                if (codigoCell == null) {
-                                    codigoCell = row.createCell(columnas.colCodigo);
+                            do {
+                                if ("EAN_13".equals(formato)) {
+                                    nuevoCodigo = GeneradorService.generarEAN13();
+                                } else {
+                                    nuevoCodigo = GeneradorService.generarCodigoUnico();
                                 }
-                                codigoCell.setCellValue(nuevoCodigo);
-                                codigosEnArchivo.add(nuevoCodigo);
-                                contadorGenerados++;
 
-                                if (nombreHoja.equals(workbook.getSheetName(0))) {
-                                    if (i <= 100) {
-                                        final String codigoFinal = nuevoCodigo;
-                                        final int rowIndex = i;
-                                        SwingUtilities.invokeLater(() -> {
-                                            tableModel.setValueAt(codigoFinal, rowIndex - 1, columnas.colCodigo);
-                                        });
-                                    }
-                                }
-                            } else {
-                                codigosEnArchivo.add(codigoActual);
+                                esUnico = !codigosExistentesBD.contains(nuevoCodigo)
+                                        && !codigosEnArchivo.contains(nuevoCodigo);
+
+                            } while (!esUnico);
+
+                            if (codigoCell == null) {
+                                codigoCell = row.createCell(columnas.colCodigo);
                             }
+                            codigoCell.setCellValue(nuevoCodigo);
+                            codigosEnArchivo.add(nuevoCodigo);
+                            contadorGenerados++;
+
+                            // Actualizar previsualización si es visible
+                            if (i <= 100) {
+                                final String codigoFinal = nuevoCodigo;
+                                final int rowIndex = i;
+                                SwingUtilities.invokeLater(() -> {
+                                    tableModel.setValueAt(codigoFinal, rowIndex - 1, columnas.colCodigo);
+                                });
+                            }
+                        } else {
+                            codigosEnArchivo.add(codigoActual);
                         }
                     }
                     return contadorGenerados;
@@ -719,43 +727,42 @@ btnSeleccionar.addActionListener(e -> seleccionarArchivoExcel());
     private void guardarEnBaseDatos() {
         List<ProductoExcel> productos = new ArrayList<>();
 
-        // Obtener hojas seleccionadas
-        List<String> hojasSeleccionadas = new ArrayList<>();
-        for (int i = 0; i < modeloHojas.getRowCount(); i++) {
-            Boolean seleccionada = (Boolean) modeloHojas.getValueAt(i, 0);
-            if (seleccionada != null && seleccionada) {
-                String nombreHoja = (String) modeloHojas.getValueAt(i, 1);
-                hojasSeleccionadas.add(nombreHoja);
-            }
+        // Obtener la hoja seleccionada
+        String nombreHoja = (String) cmbHojas.getSelectedItem();
+        if (nombreHoja == null) {
+            return; // No hay hoja seleccionada
         }
 
-        // Procesar cada hoja seleccionada
-        for (String nombreHoja : hojasSeleccionadas) {
-            Sheet sheet = workbook.getSheet(nombreHoja);
-            if (sheet == null) {
+        Sheet sheet = workbook.getSheet(nombreHoja);
+        if (sheet == null) {
+            return;
+        }
+
+        ColumnasHoja columnas = buscarColumnas(sheet);
+        if (columnas == null) {
+            return;
+        }
+
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) {
                 continue;
             }
 
-            ColumnasHoja columnas = buscarColumnas(sheet);
-            if (columnas == null) {
+            // Verificar si la fila tiene datos
+            Cell nombreCell = row.getCell(columnas.colNombre);
+            String nombre = obtenerValorCelda(nombreCell);
+
+            // Saltar filas vacías
+            if (nombre == null || nombre.trim().isEmpty()) {
                 continue;
             }
 
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                Row row = sheet.getRow(i);
-                if (row == null) {
-                    continue;
-                }
+            Cell codigoCell = row.getCell(columnas.colCodigo);
+            String codigo = obtenerValorCelda(codigoCell);
 
-                Cell nombreCell = row.getCell(columnas.colNombre);
-                Cell codigoCell = row.getCell(columnas.colCodigo);
-
-                String nombre = obtenerValorCelda(nombreCell);
-                String codigo = obtenerValorCelda(codigoCell);
-
-                if (!nombre.isEmpty() && !codigo.isEmpty()) {
-                    productos.add(new ProductoExcel(nombre, codigo));
-                }
+            if (!nombre.isEmpty() && !codigo.isEmpty()) {
+                productos.add(new ProductoExcel(nombre, codigo));
             }
         }
 

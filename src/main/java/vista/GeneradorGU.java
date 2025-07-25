@@ -888,151 +888,148 @@ public class GeneradorGU extends JFrame {
     }
 
     private void exportarAPDF() {
-        if (listaProductos.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No hay productos para exportar",
-                    "Exportar PDF", JOptionPane.WARNING_MESSAGE);
-            return;
+    if (listaProductos.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+                "No hay productos para exportar",
+                "Exportar PDF", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // Filtrar productos con imágenes válidas
+    List<Producto> productosValidos = listaProductos.stream()
+            .filter(p -> p.imagen != null)
+            .toList();
+
+    if (productosValidos.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+                "No hay productos con imágenes válidas para exportar",
+                "Exportar PDF", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("Guardar PDF");
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+    String fileName = "codigos_barras_" + sdf.format(new Date()) + ".pdf";
+    fileChooser.setSelectedFile(new File(fileName));
+
+    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+        File file = fileChooser.getSelectedFile();
+        if (!file.getName().toLowerCase().endsWith(".pdf")) {
+            file = new File(file.getAbsolutePath() + ".pdf");
         }
 
-        // Filtrar productos con imágenes válidas
-        List<Producto> productosValidos = listaProductos.stream()
-                .filter(p -> p.imagen != null)
-                .toList();
+        File finalFile = file;
 
-        if (productosValidos.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No hay productos con imágenes válidas para exportar",
-                    "Exportar PDF", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        progressBar.setVisible(true);
+        progressBar.setIndeterminate(true);
+        progressBar.setString("Generando PDF...");
 
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Guardar PDF");
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        String fileName = "codigos_barras_" + sdf.format(new Date()) + ".pdf";
-        fileChooser.setSelectedFile(new File(fileName));
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                Document document = null;
+                FileOutputStream fos = null;
+                try {
+                    document = new Document(PageSize.A4);
+                    fos = new FileOutputStream(finalFile);
+                    PdfWriter writer = PdfWriter.getInstance(document, fos);
+                    document.open();
 
-        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(".pdf")) {
-                file = new File(file.getAbsolutePath() + ".pdf");
-            }
+                    int numColumnas = Math.min(4, Math.max(1, productosValidos.size()));
+                    PdfPTable table = new PdfPTable(numColumnas);
+                    table.setWidthPercentage(100);
+                    table.setSpacingBefore(10);
+                    table.setSpacingAfter(10);
 
-            File finalFile = file;
+                    float padding = 5;
+                    float cellHeight = 50;
 
-            progressBar.setVisible(true);
-            progressBar.setIndeterminate(true);
-            progressBar.setString("Generando PDF...");
+                    for (Producto producto : productosValidos) {
+                        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                            PdfPCell cell = new PdfPCell();
+                            cell.setBorder(Rectangle.BOX); // Borde visible (marco)
+                            cell.setBorderWidth(0.5f);      // Grosor del borde
+                            cell.setPadding(padding);
+                            cell.setFixedHeight(cellHeight);
 
-            new SwingWorker<Void, Void>() {
-                @Override
-                protected Void doInBackground() {
-                    Document document = null;
-                    FileOutputStream fos = null;
-                    try {
-                        document = new Document(PageSize.A4);
-                        fos = new FileOutputStream(finalFile);
-                        PdfWriter writer = PdfWriter.getInstance(document, fos);
-                        document.open();
+                            ImageIO.write(producto.imagen, "PNG", baos);
+                            byte[] imageBytes = baos.toByteArray();
 
-                        // 1. CALCULAR NÚMERO DINÁMICO DE COLUMNAS
-                        int numColumnas = Math.min(4, Math.max(1, productosValidos.size()));
+                            Image img = Image.getInstance(imageBytes);
+                            img.scaleToFit(60, 25);
+                            img.setAlignment(Element.ALIGN_CENTER);
 
-                        // 2. CREAR TABLA CON COLUMNAS DINÁMICAS
-                        PdfPTable table = new PdfPTable(numColumnas);
-                        table.setWidthPercentage(100);
-                        table.setSpacingBefore(10);
-                        table.setSpacingAfter(10);
+                            com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
+                                    com.itextpdf.text.FontFactory.HELVETICA, 6f, com.itextpdf.text.Font.NORMAL
+                            );
+                            String nombreReducido = resumirTexto(producto.nombre, 3);
+                            com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(nombreReducido, nombreFont);
+                            nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
 
-                        float padding = 5;
-                        float cellHeight = 50;
+                            com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
+                                    com.itextpdf.text.FontFactory.HELVETICA, 6f
+                            );
+                            com.itextpdf.text.Paragraph codigo = new com.itextpdf.text.Paragraph(producto.codigo, codigoFont);
+                            codigo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
 
-                        for (Producto producto : productosValidos) {
-                            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                                PdfPCell cell = new PdfPCell();
-                                cell.setBorder(Rectangle.NO_BORDER);
-                                cell.setPadding(padding);
-                                cell.setFixedHeight(cellHeight);
+                            cell.addElement(nombre);
+                            cell.addElement(img);
+                            cell.addElement(codigo);
+                            table.addCell(cell);
 
-                                // Convertir imagen
-                                ImageIO.write(producto.imagen, "PNG", baos);
-                                byte[] imageBytes = baos.toByteArray();
-
-                                Image img = Image.getInstance(imageBytes);
-                                img.scaleToFit(60, 25);
-                                img.setAlignment(Element.ALIGN_CENTER);
-
-                                com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 6f, com.itextpdf.text.Font.NORMAL
-                                );
-                                String nombreReducido = resumirTexto(producto.nombre, 3);
-                                com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(nombreReducido, nombreFont);
-                                nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-
-// Código
-                                com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 6f
-                                );
-                                com.itextpdf.text.Paragraph codigo = new com.itextpdf.text.Paragraph(producto.codigo, codigoFont);
-                                codigo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-
-                                cell.addElement(nombre);
-                                cell.addElement(img);
-                                cell.addElement(codigo);
-                                table.addCell(cell);
-
-                            } catch (Exception e) {
-                                System.err.println("Error procesando producto: " + producto.nombre);
-                                e.printStackTrace();
-                            }
-                        }
-
-                        // 3. COMPLETAR FILA SI ES NECESARIO
-                        int celdasFaltantes = numColumnas - (productosValidos.size() % numColumnas);
-                        if (celdasFaltantes < numColumnas && celdasFaltantes > 0) {
-                            for (int i = 0; i < celdasFaltantes; i++) {
-                                PdfPCell emptyCell = new PdfPCell();
-                                emptyCell.setBorder(Rectangle.NO_BORDER);
-                                table.addCell(emptyCell);
-                            }
-                        }
-
-                        document.add(table);
-                        document.close();
-
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(GeneradorGU.this,
-                                    "PDF generado exitosamente en:\n" + finalFile.getAbsolutePath(),
-                                    "PDF Generado", JOptionPane.INFORMATION_MESSAGE);
-                        });
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(GeneradorGU.this,
-                                    "Error al generar PDF: " + e.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
-                        });
-                    } finally {
-                        try {
-                            if (fos != null) {
-                                fos.close();
-                            }
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            System.err.println("Error procesando producto: " + producto.nombre);
                             e.printStackTrace();
                         }
                     }
-                    return null;
-                }
 
-                @Override
-                protected void done() {
-                    progressBar.setVisible(false);
+                    int celdasFaltantes = numColumnas - (productosValidos.size() % numColumnas);
+                    if (celdasFaltantes < numColumnas && celdasFaltantes > 0) {
+                        for (int i = 0; i < celdasFaltantes; i++) {
+                            PdfPCell emptyCell = new PdfPCell();
+                            emptyCell.setBorder(Rectangle.BOX); // También con marco visible
+                            emptyCell.setBorderWidth(0.5f);
+                            table.addCell(emptyCell);
+                        }
+                    }
+
+                    document.add(table);
+                    document.close();
+
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(GeneradorGU.this,
+                                "PDF generado exitosamente en:\n" + finalFile.getAbsolutePath(),
+                                "PDF Generado", JOptionPane.INFORMATION_MESSAGE);
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(GeneradorGU.this,
+                                "Error al generar PDF: " + e.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    });
+                } finally {
+                    try {
+                        if (fos != null) {
+                            fos.close();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }.execute();
-        }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                progressBar.setVisible(false);
+            }
+        }.execute();
     }
+}
+
 
     public String resumirTexto(String texto, int maxPalabras) {
         String[] palabras = texto.trim().split("\\s+");
