@@ -349,9 +349,9 @@ public class PanelImportarExcel extends JDialog {
                     // Buscar columnas de interés
                     for (Cell cell : headerRow) {
                         String header = cell.getStringCellValue().trim().toLowerCase();
-                        if (header.contains("código") || header.contains("codigo")) {
+                        if (header.contains("CODIGO BARRAS") || header.contains("codigo")) {
                             columnaCodigoBarras = cell.getColumnIndex();
-                        } else if (header.contains("producto") || header.contains("descripcion")) {
+                        } else if (header.contains("DESCRIPCION") || header.contains("descripcion")) {
                             columnaNombre = cell.getColumnIndex();
                         }
                     }
@@ -435,9 +435,9 @@ public class PanelImportarExcel extends JDialog {
 
         for (Cell cell : headerRow) {
             String header = cell.getStringCellValue().trim().toLowerCase();
-            if (header.contains("código") || header.contains("codigo")) {
+            if (header.contains("CODIGO BARRAS") || header.contains("codigo")) {
                 colCodigo = cell.getColumnIndex();
-            } else if (header.contains("producto") || header.contains("descripcion")) {
+            } else if (header.contains("DESCRIPCION") || header.contains("descripcion")) {
                 colNombre = cell.getColumnIndex();
             }
         }
