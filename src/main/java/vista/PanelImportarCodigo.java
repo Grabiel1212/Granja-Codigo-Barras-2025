@@ -2,6 +2,7 @@ package vista;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -33,7 +34,9 @@ public class PanelImportarCodigo extends JDialog {
     private List<Producto> productosImportados = new ArrayList<>();
     private JComboBox<String> cmbColumnaNombre;
     private JComboBox<String> cmbColumnaCodigo;
+    private JComboBox<String> cmbHojasExcel;
     private List<String> cabecerasExcel = new ArrayList<>();
+    private Workbook workbook;
     private Sheet sheet;
 
     public PanelImportarCodigo(GeneradorGU parent) {
@@ -43,23 +46,35 @@ public class PanelImportarCodigo extends JDialog {
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout(10, 10));
 
-        // Panel superior para selección de columnas
-        JPanel panelSuperior = new JPanel(new GridLayout(3, 2, 10, 10));
+        // Panel superior para selección de archivo y columnas
+        JPanel panelSuperior = new JPanel(new GridLayout(4, 2, 10, 10));
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-      btnCargarExcel = new JButton("Cargar Archivo Excel");
+ btnCargarExcel = new JButton("Cargar Archivo Excel");
 btnCargarExcel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
 
-btnCargarExcel.setBackground(new Color(100, 149, 237)); // Azul claro estilo cornflower blue
+// Azul moderno (Royal Blue)
+btnCargarExcel.setBackground(new Color(25, 118, 210));  
 btnCargarExcel.setForeground(Color.WHITE);
+
+// Mantener fondo sólido
+btnCargarExcel.setOpaque(true);
+btnCargarExcel.setContentAreaFilled(true); // <<--- importante: true
 btnCargarExcel.setFocusPainted(false);
 btnCargarExcel.setBorderPainted(false);
-btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible en algunos LAFs
+btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
 
-
+        
         panelSuperior.add(btnCargarExcel);
-        panelSuperior.add(new JLabel()); // Espacio en blanco
 
+        // ComboBox para selección de hojas
+        panelSuperior.add(new JLabel("Hoja:"));
+        cmbHojasExcel = new JComboBox<>();
+        cmbHojasExcel.setEnabled(false);
+        panelSuperior.add(cmbHojasExcel);
+        panelSuperior.add(new JLabel()); // Espacio vacío
+
+        // Selectores de columnas
         panelSuperior.add(new JLabel("Columna para Nombres:"));
         cmbColumnaNombre = new JComboBox<>();
         cmbColumnaNombre.setEnabled(false);
@@ -72,7 +87,7 @@ btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible
 
         add(panelSuperior, BorderLayout.NORTH);
 
-        // Modelo de tabla
+        // Modelo de tabla con mejoras visuales
         modeloTabla = new DefaultTableModel() {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
@@ -84,71 +99,88 @@ btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible
                 return column == 0;
             }
         };
-        modeloTabla.addColumn("Seleccionar");
-        modeloTabla.addColumn("Nombre");
+        modeloTabla.addColumn("✓");
+        modeloTabla.addColumn("Nombre del Producto");
         modeloTabla.addColumn("Código de Barras");
 
         tablaProductos = new JTable(modeloTabla);
-        tablaProductos.getColumnModel().getColumn(0).setPreferredWidth(30);
+        tablaProductos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+        tablaProductos.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+
         tablaProductos.setRowHeight(25);
         tablaProductos.setSelectionBackground(new Color(200, 220, 255));
+        tablaProductos.setGridColor(new Color(220, 220, 220));
+        tablaProductos.setShowGrid(true);
+
+        // Ajustar ancho de columnas
+        TableColumnModel columnModel = tablaProductos.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(30);
+        columnModel.getColumn(0).setMaxWidth(50);
+        columnModel.getColumn(1).setPreferredWidth(300);
+        columnModel.getColumn(2).setPreferredWidth(200);
 
         JScrollPane scrollPane = new JScrollPane(tablaProductos);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Productos a importar"));
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(150, 150, 150)),
+                "Vista previa de productos",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12),
+                new Color(70, 70, 70)
+        ));
+
         add(scrollPane, BorderLayout.CENTER);
 
-        // Panel inferior con botones
-        JPanel panelInferior = new JPanel();
-        panelInferior.setLayout(new BoxLayout(panelInferior, BoxLayout.X_AXIS));
-        panelInferior.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        panelInferior.add(Box.createHorizontalGlue());
+        // Panel inferior con botones mejorados
+        JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        panelInferior.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
-        // Inicializar botones
-        btnSeleccionarTodos = new JButton("Seleccionar Todos");
-        btnDeseleccionarTodos = new JButton("Deseleccionar Todos");
-        btnImportarSeleccionados = new JButton("Importar Seleccionados");
-        btnCancelar = new JButton("Cancelar");
-
-        // Configurar colores
-        btnSeleccionarTodos.setBackground(new Color(60, 150, 60));
-        btnDeseleccionarTodos.setBackground(new Color(200, 60, 60));
-        btnImportarSeleccionados.setBackground(new Color(50, 100, 200));
-        btnCancelar.setBackground(new Color(150, 150, 150));
-
-        btnSeleccionarTodos.setForeground(Color.WHITE);
-        btnDeseleccionarTodos.setForeground(Color.WHITE);
-        btnImportarSeleccionados.setForeground(Color.WHITE);
-        btnCancelar.setForeground(Color.WHITE);
-
-        // Hacer los botones opacos para mostrar colores
-        for (JButton btn : new JButton[]{btnSeleccionarTodos, btnDeseleccionarTodos,
-            btnImportarSeleccionados, btnCancelar}) {
-            btn.setOpaque(true);
-            btn.setBorderPainted(false);
-            btn.setFocusPainted(false);
-            btn.setMargin(new Insets(5, 10, 5, 10));
-        }
+        // Botones con estilo consistente
+        btnSeleccionarTodos = createStyledButton("Seleccionar Todos", new Color(60, 179, 113)); // MediumSeaGreen
+        btnDeseleccionarTodos = createStyledButton("Deseleccionar Todos", new Color(220, 80, 60)); // Tomato
+        btnImportarSeleccionados = createStyledButton("Importar Seleccionados", new Color(65, 105, 225)); // RoyalBlue
+        btnCancelar = createStyledButton("Cancelar", new Color(120, 120, 120)); // Gray
 
         panelInferior.add(btnSeleccionarTodos);
-        panelInferior.add(Box.createRigidArea(new Dimension(10, 0)));
         panelInferior.add(btnDeseleccionarTodos);
-        panelInferior.add(Box.createRigidArea(new Dimension(10, 0)));
         panelInferior.add(btnImportarSeleccionados);
-        panelInferior.add(Box.createRigidArea(new Dimension(10, 0)));
         panelInferior.add(btnCancelar);
 
         add(panelInferior, BorderLayout.SOUTH);
 
         // Listeners
         btnCargarExcel.addActionListener(e -> cargarExcel());
+        cmbHojasExcel.addActionListener(e -> cambiarHoja());
+        cmbColumnaNombre.addActionListener(e -> actualizarVistaPrevia());
+        cmbColumnaCodigo.addActionListener(e -> actualizarVistaPrevia());
         btnSeleccionarTodos.addActionListener(e -> seleccionarTodos(true));
         btnDeseleccionarTodos.addActionListener(e -> seleccionarTodos(false));
         btnCancelar.addActionListener(e -> dispose());
         btnImportarSeleccionados.addActionListener(e -> importarProductos());
+    }
 
-        // Listener para actualizar vista previa al cambiar selección de columnas
-        cmbColumnaNombre.addActionListener(e -> actualizarVistaPrevia());
-        cmbColumnaCodigo.addActionListener(e -> actualizarVistaPrevia());
+    // Método para crear botones con estilo consistente
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+
+        // 🔹 Forzar que el botón use color sólido
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+
+        // 🔹 Quitar borde blanco predeterminado y aplicar uno sólido
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(bgColor.darker(), 2), // borde sólido
+                BorderFactory.createEmptyBorder(6, 18, 6, 18) // padding interno
+        ));
+
+        // 🔹 Cursor tipo "mano" al pasar encima
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        return button;
     }
 
     private void cargarExcel() {
@@ -160,38 +192,73 @@ btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible
             modeloTabla.setRowCount(0);
             cmbColumnaNombre.removeAllItems();
             cmbColumnaCodigo.removeAllItems();
+            cmbHojasExcel.removeAllItems();
             cabecerasExcel.clear();
 
-            try (FileInputStream fis = new FileInputStream(archivo); 
-                 Workbook workbook = new XSSFWorkbook(fis)) {
-
-                sheet = workbook.getSheetAt(0);
-                Row headerRow = sheet.getRow(0);
-
-                // Leer cabeceras
-                for (Cell cell : headerRow) {
-                    cabecerasExcel.add(cell.toString());
+            try (FileInputStream fis = new FileInputStream(archivo)) {
+                // Cerrar workbook anterior si existe
+                if (workbook != null) {
+                    workbook.close();
                 }
 
-                // Llenar comboboxes con cabeceras
-                for (String cabecera : cabecerasExcel) {
-                    cmbColumnaNombre.addItem(cabecera);
-                    cmbColumnaCodigo.addItem(cabecera);
+                workbook = new XSSFWorkbook(fis);
+
+                // Llenar combo de hojas
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    cmbHojasExcel.addItem(workbook.getSheetName(i));
                 }
 
-                cmbColumnaNombre.setEnabled(true);
-                cmbColumnaCodigo.setEnabled(true);
+                cmbHojasExcel.setEnabled(true);
+                cmbHojasExcel.setSelectedIndex(0);
+                cambiarHoja();
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
                         "Error al leer el archivo: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         }
     }
 
+    private void cambiarHoja() {
+        if (workbook == null || cmbHojasExcel.getSelectedIndex() < 0) {
+            return;
+        }
+
+        try {
+            sheet = workbook.getSheetAt(cmbHojasExcel.getSelectedIndex());
+            Row headerRow = sheet.getRow(0);
+            cabecerasExcel.clear();
+            cmbColumnaNombre.removeAllItems();
+            cmbColumnaCodigo.removeAllItems();
+
+            // Leer cabeceras
+            for (Cell cell : headerRow) {
+                cabecerasExcel.add(cell.toString());
+            }
+
+            // Llenar combos con cabeceras
+            for (String cabecera : cabecerasExcel) {
+                cmbColumnaNombre.addItem(cabecera);
+                cmbColumnaCodigo.addItem(cabecera);
+            }
+
+            cmbColumnaNombre.setEnabled(true);
+            cmbColumnaCodigo.setEnabled(true);
+            actualizarVistaPrevia();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar hoja: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void actualizarVistaPrevia() {
-        if (sheet == null || cmbColumnaNombre.getSelectedIndex() < 0 || cmbColumnaCodigo.getSelectedIndex() < 0) {
+        if (sheet == null
+                || cmbColumnaNombre.getSelectedIndex() < 0
+                || cmbColumnaCodigo.getSelectedIndex() < 0) {
             return;
         }
 
@@ -200,8 +267,10 @@ btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible
         int nombreColIndex = cmbColumnaNombre.getSelectedIndex();
         int codigoColIndex = cmbColumnaCodigo.getSelectedIndex();
 
-        // Leer filas (empezando desde la fila 1 para omitir cabeceras)
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+        // Leer hasta 100 filas para vista previa
+        int maxFilas = Math.min(sheet.getLastRowNum(), 100000000);
+
+        for (int i = 1; i <= maxFilas; i++) {
             Row row = sheet.getRow(i);
             if (row == null) {
                 continue;
@@ -213,34 +282,22 @@ btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible
             String nombre = (nombreCell != null) ? obtenerValorCelda(nombreCell) : "";
             String codigo = (codigoCell != null) ? obtenerValorCelda(codigoCell) : "";
 
-            if (!nombre.isEmpty() && !codigo.isEmpty()) {
+            // Mostrar filas con datos válidos
+            if (!nombre.isEmpty() || !codigo.isEmpty()) {
                 modeloTabla.addRow(new Object[]{true, nombre, codigo});
             }
         }
+
+        // Ajustar ancho de columnas automáticamente
+        tablaProductos.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        TableColumnModel columnModel = tablaProductos.getColumnModel();
+        columnModel.getColumn(1).setPreferredWidth(300);
+        columnModel.getColumn(2).setPreferredWidth(200);
     }
 
     private String obtenerValorCelda(Cell cell) {
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    double num = cell.getNumericCellValue();
-                    if (num == (int) num) {
-                        return String.valueOf((int) num);
-                    } else {
-                        return String.valueOf(num);
-                    }
-                }
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            default:
-                return "";
-        }
+        DataFormatter formatter = new DataFormatter();
+        return formatter.formatCellValue(cell);
     }
 
     private void seleccionarTodos(boolean seleccionar) {
@@ -261,71 +318,89 @@ btnCargarExcel.setOpaque(true); // Obligatorio si quieres color de fondo visible
         GeneradorService servicio = new GeneradorService();
         int contador = 0;
         int errores = 0;
-        
-         StringBuilder erroresDetalle = new StringBuilder();
-    int filaError = 0;
-        
-        
+        StringBuilder erroresDetalle = new StringBuilder();
 
-       for (int i = 0; i < modeloTabla.getRowCount(); i++) {
-        if ((Boolean) modeloTabla.getValueAt(i, 0)) {
-            String nombre = (String) modeloTabla.getValueAt(i, 1);
-            String codigo = (String) modeloTabla.getValueAt(i, 2);
-            filaError = i + 1;  // Guardar número de fila para reporte
+        for (int i = 0; i < modeloTabla.getRowCount(); i++) {
+            if ((Boolean) modeloTabla.getValueAt(i, 0)) {
+                String nombre = (String) modeloTabla.getValueAt(i, 1);
+                String codigo = (String) modeloTabla.getValueAt(i, 2);
+                int filaExcel = i + 2;  // Fila real en Excel (+1 por cabecera +1 por índice base 1)
 
-            try {
-                // Validación básica del código
-                if (codigo == null || codigo.trim().isEmpty()) {
-                    throw new IllegalArgumentException("Código vacío");
+                try {
+                    // Validación básica
+                    if (codigo == null || codigo.trim().isEmpty()) {
+                        throw new Exception("Código vacío");
+                    }
+
+                    // Generar imagen del código de barras
+                    BufferedImage imagen = servicio.generarImagenCodigo(
+                            codigo, BarcodeFormat.CODE_128, 350, 120
+                    );
+
+                    if (imagen == null) {
+                        throw new Exception("Error generando imagen");
+                    }
+
+                    productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128));
+                    contador++;
+                } catch (Exception ex) {
+                    errores++;
+                    erroresDetalle.append("\nFila ")
+                            .append(filaExcel)
+                            .append(": ")
+                            .append(ex.getMessage())
+                            .append(" (")
+                            .append(nombre)
+                            .append(")");
                 }
-                
-                // Generar imagen
-                BufferedImage imagen = servicio.generarImagenCodigo(
-                    codigo, BarcodeFormat.CODE_128, 350, 120
-                );
-                
-                // Verificar que la imagen se generó correctamente
-                if (imagen == null) {
-                    throw new RuntimeException("Imagen no generada");
-                }
-                
-                productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128));
-                contador++;
-            } catch (Exception ex) {
-                errores++;
-                erroresDetalle.append("\nFila ")
-                              .append(filaError)
-                              .append(": ")
-                              .append(ex.getMessage())
-                              .append(" [")
-                              .append(nombre)
-                              .append("]");
-                System.err.println("Error en fila " + filaError + ": " + ex.getMessage());
             }
         }
-    }
 
         if (contador > 0) {
             generadorGU.agregarProductosImportados(productosImportados);
             dispose();
             generadorGU.mostrarListaProductos();
+        }
 
+        // Mostrar resumen de importación
+        if (errores > 0) {
             JOptionPane.showMessageDialog(this,
-                    "Se importaron " + contador + " productos exitosamente!"
-                    + (errores > 0 ? "\nErrores: " + errores : ""),
-                    "Importación Exitosa", JOptionPane.INFORMATION_MESSAGE);
+                    "Importación completada con errores:\n"
+                    + "• Productos importados: " + contador + "\n"
+                    + "• Errores: " + errores + erroresDetalle.toString(),
+                    "Resultado de Importación",
+                    JOptionPane.WARNING_MESSAGE);
+        } else if (contador > 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Se importaron " + contador + " productos exitosamente!",
+                    "Importación Exitosa",
+                    JOptionPane.INFORMATION_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(this,
-                    "No se seleccionaron productos para importar",
-                    "Advertencia", JOptionPane.WARNING_MESSAGE);
+                    "No se seleccionaron productos válidos para importar",
+                    "Advertencia",
+                    JOptionPane.WARNING_MESSAGE);
         }
-        
-        // Mostrar detalles de errores
-    if (errores > 0) {
-        JOptionPane.showMessageDialog(this,
-            "Se importaron " + contador + " productos\n" +
-            "Errores: " + errores + erroresDetalle.toString(),
-            "Importación con errores", JOptionPane.WARNING_MESSAGE);
+
+        // Cerrar workbook al finalizar
+        try {
+            if (workbook != null) {
+                workbook.close();
+            }
+        } catch (Exception ex) {
+            System.err.println("Error cerrando workbook: " + ex.getMessage());
+        }
     }
+
+    @Override
+    public void dispose() {
+        try {
+            if (workbook != null) {
+                workbook.close();
+            }
+        } catch (Exception ex) {
+            System.err.println("Error cerrando workbook: " + ex.getMessage());
+        }
+        super.dispose();
     }
 }
