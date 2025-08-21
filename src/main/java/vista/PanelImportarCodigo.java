@@ -34,6 +34,7 @@ public class PanelImportarCodigo extends JDialog {
     private List<Producto> productosImportados = new ArrayList<>();
     private JComboBox<String> cmbColumnaNombre;
     private JComboBox<String> cmbColumnaCodigo;
+    private JComboBox<String> cmbColumnaCantidad;
     private JComboBox<String> cmbHojasExcel;
     private List<String> cabecerasExcel = new ArrayList<>();
     private Workbook workbook;
@@ -42,28 +43,23 @@ public class PanelImportarCodigo extends JDialog {
     public PanelImportarCodigo(GeneradorGU parent) {
         super(parent, "Importar Códigos desde Excel", true);
         this.generadorGU = parent;
-        setSize(900, 700);
+        setSize(1000, 700);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout(10, 10));
 
         // Panel superior para selección de archivo y columnas
-        JPanel panelSuperior = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel panelSuperior = new JPanel(new GridLayout(5, 2, 10, 10));
         panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
- btnCargarExcel = new JButton("Cargar Archivo Excel");
-btnCargarExcel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-
-// Azul moderno (Royal Blue)
-btnCargarExcel.setBackground(new Color(25, 118, 210));  
-btnCargarExcel.setForeground(Color.WHITE);
-
-// Mantener fondo sólido
-btnCargarExcel.setOpaque(true);
-btnCargarExcel.setContentAreaFilled(true); // <<--- importante: true
-btnCargarExcel.setFocusPainted(false);
-btnCargarExcel.setBorderPainted(false);
-btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-
+        btnCargarExcel = new JButton("Cargar Archivo Excel");
+        btnCargarExcel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        btnCargarExcel.setBackground(new Color(25, 118, 210));  
+        btnCargarExcel.setForeground(Color.WHITE);
+        btnCargarExcel.setOpaque(true);
+        btnCargarExcel.setContentAreaFilled(true);
+        btnCargarExcel.setFocusPainted(false);
+        btnCargarExcel.setBorderPainted(false);
+        btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         
         panelSuperior.add(btnCargarExcel);
 
@@ -85,13 +81,22 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         cmbColumnaCodigo.setEnabled(false);
         panelSuperior.add(cmbColumnaCodigo);
 
+        // Nuevo selector para columna de cantidad
+        panelSuperior.add(new JLabel("Columna para Cantidad (opcional):"));
+        cmbColumnaCantidad = new JComboBox<>();
+        cmbColumnaCantidad.setEnabled(false);
+        cmbColumnaCantidad.addItem("(No usar)");
+        panelSuperior.add(cmbColumnaCantidad);
+
         add(panelSuperior, BorderLayout.NORTH);
 
         // Modelo de tabla con mejoras visuales
         modeloTabla = new DefaultTableModel() {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 0 ? Boolean.class : String.class;
+                if (columnIndex == 0) return Boolean.class;
+                if (columnIndex == 3) return Integer.class;
+                return String.class;
             }
 
             @Override
@@ -102,6 +107,7 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         modeloTabla.addColumn("✓");
         modeloTabla.addColumn("Nombre del Producto");
         modeloTabla.addColumn("Código de Barras");
+        modeloTabla.addColumn("Cantidad");
 
         tablaProductos = new JTable(modeloTabla);
         tablaProductos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
@@ -118,6 +124,7 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         columnModel.getColumn(0).setMaxWidth(50);
         columnModel.getColumn(1).setPreferredWidth(300);
         columnModel.getColumn(2).setPreferredWidth(200);
+        columnModel.getColumn(3).setPreferredWidth(80);
 
         JScrollPane scrollPane = new JScrollPane(tablaProductos);
         scrollPane.setBorder(BorderFactory.createTitledBorder(
@@ -136,10 +143,10 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         panelInferior.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
         // Botones con estilo consistente
-        btnSeleccionarTodos = createStyledButton("Seleccionar Todos", new Color(60, 179, 113)); // MediumSeaGreen
-        btnDeseleccionarTodos = createStyledButton("Deseleccionar Todos", new Color(220, 80, 60)); // Tomato
-        btnImportarSeleccionados = createStyledButton("Importar Seleccionados", new Color(65, 105, 225)); // RoyalBlue
-        btnCancelar = createStyledButton("Cancelar", new Color(120, 120, 120)); // Gray
+        btnSeleccionarTodos = createStyledButton("Seleccionar Todos", new Color(60, 179, 113));
+        btnDeseleccionarTodos = createStyledButton("Deseleccionar Todos", new Color(220, 80, 60));
+        btnImportarSeleccionados = createStyledButton("Importar Seleccionados", new Color(65, 105, 225));
+        btnCancelar = createStyledButton("Cancelar", new Color(120, 120, 120));
 
         panelInferior.add(btnSeleccionarTodos);
         panelInferior.add(btnDeseleccionarTodos);
@@ -153,6 +160,7 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         cmbHojasExcel.addActionListener(e -> cambiarHoja());
         cmbColumnaNombre.addActionListener(e -> actualizarVistaPrevia());
         cmbColumnaCodigo.addActionListener(e -> actualizarVistaPrevia());
+        cmbColumnaCantidad.addActionListener(e -> actualizarVistaPrevia());
         btnSeleccionarTodos.addActionListener(e -> seleccionarTodos(true));
         btnDeseleccionarTodos.addActionListener(e -> seleccionarTodos(false));
         btnCancelar.addActionListener(e -> dispose());
@@ -165,21 +173,14 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         button.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
-
-        // 🔹 Forzar que el botón use color sólido
         button.setContentAreaFilled(false);
         button.setOpaque(true);
-
-        // 🔹 Quitar borde blanco predeterminado y aplicar uno sólido
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(bgColor.darker(), 2), // borde sólido
-                BorderFactory.createEmptyBorder(6, 18, 6, 18) // padding interno
+                BorderFactory.createLineBorder(bgColor.darker(), 2),
+                BorderFactory.createEmptyBorder(6, 18, 6, 18)
         ));
-
-        // 🔹 Cursor tipo "mano" al pasar encima
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
         return button;
     }
 
@@ -192,6 +193,7 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
             modeloTabla.setRowCount(0);
             cmbColumnaNombre.removeAllItems();
             cmbColumnaCodigo.removeAllItems();
+            cmbColumnaCantidad.removeAllItems();
             cmbHojasExcel.removeAllItems();
             cabecerasExcel.clear();
 
@@ -232,6 +234,8 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
             cabecerasExcel.clear();
             cmbColumnaNombre.removeAllItems();
             cmbColumnaCodigo.removeAllItems();
+            cmbColumnaCantidad.removeAllItems();
+            cmbColumnaCantidad.addItem("(No usar)");
 
             // Leer cabeceras
             for (Cell cell : headerRow) {
@@ -242,10 +246,12 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
             for (String cabecera : cabecerasExcel) {
                 cmbColumnaNombre.addItem(cabecera);
                 cmbColumnaCodigo.addItem(cabecera);
+                cmbColumnaCantidad.addItem(cabecera);
             }
 
             cmbColumnaNombre.setEnabled(true);
             cmbColumnaCodigo.setEnabled(true);
+            cmbColumnaCantidad.setEnabled(true);
             actualizarVistaPrevia();
 
         } catch (Exception ex) {
@@ -266,9 +272,15 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
 
         int nombreColIndex = cmbColumnaNombre.getSelectedIndex();
         int codigoColIndex = cmbColumnaCodigo.getSelectedIndex();
+        int cantidadColIndex = -1;
+        
+        // Verificar si se seleccionó una columna de cantidad
+        if (cmbColumnaCantidad.getSelectedIndex() > 0) {
+            cantidadColIndex = cmbColumnaCantidad.getSelectedIndex() - 1;
+        }
 
         // Leer hasta 100 filas para vista previa
-        int maxFilas = Math.min(sheet.getLastRowNum(), 100000000);
+        int maxFilas = Math.min(sheet.getLastRowNum(), 100);
 
         for (int i = 1; i <= maxFilas; i++) {
             Row row = sheet.getRow(i);
@@ -278,13 +290,26 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
 
             Cell nombreCell = row.getCell(nombreColIndex);
             Cell codigoCell = row.getCell(codigoColIndex);
+            Cell cantidadCell = (cantidadColIndex >= 0 && cantidadColIndex < row.getLastCellNum()) ? 
+                                row.getCell(cantidadColIndex) : null;
 
             String nombre = (nombreCell != null) ? obtenerValorCelda(nombreCell) : "";
             String codigo = (codigoCell != null) ? obtenerValorCelda(codigoCell) : "";
+            int cantidad = 1;
+            
+            // Procesar la cantidad si existe la columna
+            if (cantidadCell != null) {
+                try {
+                    String cantidadStr = obtenerValorCelda(cantidadCell);
+                    cantidad = (int) Double.parseDouble(cantidadStr);
+                } catch (NumberFormatException ex) {
+                    cantidad = 1;
+                }
+            }
 
             // Mostrar filas con datos válidos
             if (!nombre.isEmpty() || !codigo.isEmpty()) {
-                modeloTabla.addRow(new Object[]{true, nombre, codigo});
+                modeloTabla.addRow(new Object[]{true, nombre, codigo, cantidad});
             }
         }
 
@@ -293,6 +318,7 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         TableColumnModel columnModel = tablaProductos.getColumnModel();
         columnModel.getColumn(1).setPreferredWidth(300);
         columnModel.getColumn(2).setPreferredWidth(200);
+        columnModel.getColumn(3).setPreferredWidth(80);
     }
 
     private String obtenerValorCelda(Cell cell) {
@@ -324,7 +350,21 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
             if ((Boolean) modeloTabla.getValueAt(i, 0)) {
                 String nombre = (String) modeloTabla.getValueAt(i, 1);
                 String codigo = (String) modeloTabla.getValueAt(i, 2);
-                int filaExcel = i + 2;  // Fila real en Excel (+1 por cabecera +1 por índice base 1)
+                int cantidad = 1;
+                
+                // Obtener la cantidad si existe en la tabla
+                Object cantidadObj = modeloTabla.getValueAt(i, 3);
+                if (cantidadObj instanceof Integer) {
+                    cantidad = (Integer) cantidadObj;
+                } else if (cantidadObj instanceof String) {
+                    try {
+                        cantidad = Integer.parseInt((String) cantidadObj);
+                    } catch (NumberFormatException ex) {
+                        cantidad = 1;
+                    }
+                }
+                
+                int filaExcel = i + 2;
 
                 try {
                     // Validación básica
@@ -341,8 +381,11 @@ btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
                         throw new Exception("Error generando imagen");
                     }
 
-                    productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128));
-                    contador++;
+                    // Agregar tantas copias como indique la cantidad
+                    for (int j = 0; j < cantidad; j++) {
+                        productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128));
+                        contador++;
+                    }
                 } catch (Exception ex) {
                     errores++;
                     erroresDetalle.append("\nFila ")
