@@ -7,22 +7,19 @@ package util;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import lombok.NoArgsConstructor;
 
 /**
  *
  * @author juang
  */
-
 public class ConectarBD {
 
  private static final String URL = "jdbc:mysql://localhost:3306/ULTIMARQUETSAC?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
 private static final String USUARIO = "root";
-private static final String CONTRASENA = "1212";
-
-//private static final String URL = "jdbc:mysql://192.168.1.5:3306/ULTIMARQUETSAC?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
-//private static final String USUARIO = "juan12";
-//private static final String CONTRASENA = "3030";
+ private static final String CONTRASENA = "1212";
+//    private static final String URL = "jdbc:mysql://192.168.1.5:3306/ULTIMARQUETSAC?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
+//    private static final String USUARIO = "juan12";
+//    private static final String CONTRASENA = "3030";
 
     static {
         try {
@@ -59,6 +56,5 @@ private static final String CONTRASENA = "1212";
             }
         }
     }
-
 
 }

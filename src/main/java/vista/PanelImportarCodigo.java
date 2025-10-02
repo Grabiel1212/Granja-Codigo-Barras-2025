@@ -2,6 +2,7 @@ package vista;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
@@ -16,10 +17,6 @@ import model.Producto;
 import com.google.zxing.BarcodeFormat;
 import java.awt.image.BufferedImage;
 import service.GeneradorService;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
-import java.awt.Color;
 
 public class PanelImportarCodigo extends JDialog {
 
@@ -36,6 +33,7 @@ public class PanelImportarCodigo extends JDialog {
     private JComboBox<String> cmbColumnaCodigo;
     private JComboBox<String> cmbColumnaCantidad;
     private JComboBox<String> cmbHojasExcel;
+    private JComboBox<String> cmbColumnaPrecio;
     private List<String> cabecerasExcel = new ArrayList<>();
     private Workbook workbook;
     private Sheet sheet;
@@ -47,109 +45,197 @@ public class PanelImportarCodigo extends JDialog {
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout(10, 10));
 
+        // Configurar colores principales
+        // Configurar colores principales
+        java.awt.Color colorPrimario = new java.awt.Color(41, 128, 185);
+        java.awt.Color colorSecundario = new java.awt.Color(52, 152, 219);
+        java.awt.Color colorFondo = new java.awt.Color(245, 245, 245);
+        java.awt.Color colorBorde = new java.awt.Color(220, 220, 220);
+        java.awt.Color colorTexto = new java.awt.Color(60, 60, 60);
+
+        getContentPane().setBackground(colorFondo);
+
         // Panel superior para selección de archivo y columnas
-        JPanel panelSuperior = new JPanel(new GridLayout(5, 2, 10, 10));
-        panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panelSuperior = new JPanel(new GridBagLayout());
+        panelSuperior.setBackground(colorFondo);
+        panelSuperior.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, colorBorde),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
 
-        btnCargarExcel = new JButton("Cargar Archivo Excel");
-        btnCargarExcel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-        btnCargarExcel.setBackground(new Color(25, 118, 210));  
-        btnCargarExcel.setForeground(Color.WHITE);
-        btnCargarExcel.setOpaque(true);
-        btnCargarExcel.setContentAreaFilled(true);
-        btnCargarExcel.setFocusPainted(false);
-        btnCargarExcel.setBorderPainted(false);
-        btnCargarExcel.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-        
-        panelSuperior.add(btnCargarExcel);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // ComboBox para selección de hojas
-        panelSuperior.add(new JLabel("Hoja:"));
-        cmbHojasExcel = new JComboBox<>();
+        // Botón cargar Excel
+        btnCargarExcel = createStyledButton("Cargar Archivo Excel", colorPrimario);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        panelSuperior.add(btnCargarExcel, gbc);
+
+        // Separador
+        JSeparator separator = new JSeparator();
+        separator.setForeground(colorBorde);
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(10, 0, 10, 0);
+        panelSuperior.add(separator, gbc);
+
+        // Configuración de controles
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Selector de hoja
+        JLabel lblHoja = createStyledLabel("Hoja de Excel:");
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        panelSuperior.add(lblHoja, gbc);
+
+        cmbHojasExcel = createStyledComboBox();
         cmbHojasExcel.setEnabled(false);
-        panelSuperior.add(cmbHojasExcel);
-        panelSuperior.add(new JLabel()); // Espacio vacío
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        panelSuperior.add(cmbHojasExcel, gbc);
 
-        // Selectores de columnas
-        panelSuperior.add(new JLabel("Columna para Nombres:"));
-        cmbColumnaNombre = new JComboBox<>();
+        // Selector de columna nombre
+        JLabel lblNombre = createStyledLabel("Columna para Nombres:");
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        panelSuperior.add(lblNombre, gbc);
+
+        cmbColumnaNombre = createStyledComboBox();
         cmbColumnaNombre.setEnabled(false);
-        panelSuperior.add(cmbColumnaNombre);
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        panelSuperior.add(cmbColumnaNombre, gbc);
 
-        panelSuperior.add(new JLabel("Columna para Códigos:"));
-        cmbColumnaCodigo = new JComboBox<>();
+        // Selector de columna código
+        JLabel lblCodigo = createStyledLabel("Columna para Códigos:");
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        panelSuperior.add(lblCodigo, gbc);
+
+        cmbColumnaCodigo = createStyledComboBox();
         cmbColumnaCodigo.setEnabled(false);
-        panelSuperior.add(cmbColumnaCodigo);
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        panelSuperior.add(cmbColumnaCodigo, gbc);
 
-        // Nuevo selector para columna de cantidad
-        panelSuperior.add(new JLabel("Columna para Cantidad (opcional):"));
-        cmbColumnaCantidad = new JComboBox<>();
+        // Selector de columna cantidad
+        JLabel lblCantidad = createStyledLabel("Columna para Cantidad (opcional):");
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        panelSuperior.add(lblCantidad, gbc);
+
+        cmbColumnaCantidad = createStyledComboBox();
         cmbColumnaCantidad.setEnabled(false);
         cmbColumnaCantidad.addItem("(No usar)");
-        panelSuperior.add(cmbColumnaCantidad);
+        gbc.gridx = 1;
+        gbc.gridy = 5;
+        panelSuperior.add(cmbColumnaCantidad, gbc);
+
+        // Selector de columna precio
+        JLabel lblPrecio = createStyledLabel("Columna para Precio (opcional):");
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        panelSuperior.add(lblPrecio, gbc);
+
+        cmbColumnaPrecio = createStyledComboBox();
+        cmbColumnaPrecio.setEnabled(false);
+        cmbColumnaPrecio.addItem("(No usar)");
+        gbc.gridx = 1;
+        gbc.gridy = 6;
+        panelSuperior.add(cmbColumnaPrecio, gbc);
 
         add(panelSuperior, BorderLayout.NORTH);
 
-        // Modelo de tabla con mejoras visuales
+        // Modelo de tabla - clave para mostrar checkboxes
         modeloTabla = new DefaultTableModel() {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 0) return Boolean.class;
-                if (columnIndex == 3) return Integer.class;
+                if (columnIndex == 0) {
+                    return Boolean.class; // Esto hace que aparezcan checkboxes automáticamente
+                }
+                if (columnIndex == 3) {
+                    return Integer.class;
+                }
                 return String.class;
             }
 
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 0;
+                return column == 0; // Solo la columna de checkboxes es editable
             }
         };
+
         modeloTabla.addColumn("✓");
         modeloTabla.addColumn("Nombre del Producto");
         modeloTabla.addColumn("Código de Barras");
         modeloTabla.addColumn("Cantidad");
+        modeloTabla.addColumn("Precio");
 
         tablaProductos = new JTable(modeloTabla);
+
+        // Configurar el renderizador para centrar los checkboxes
+        tablaProductos.getColumnModel().getColumn(0).setCellRenderer(new CheckboxRenderer());
+
+        // Personalizar apariencia de la tabla
+        // Personalizar apariencia de la tabla
         tablaProductos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
-        tablaProductos.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-
-        tablaProductos.setRowHeight(25);
-        tablaProductos.setSelectionBackground(new Color(200, 220, 255));
-        tablaProductos.setGridColor(new Color(220, 220, 220));
+        tablaProductos.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
+        tablaProductos.getTableHeader().setBackground(new java.awt.Color(230, 230, 230));
+        tablaProductos.getTableHeader().setForeground(new java.awt.Color(70, 70, 70));
+        tablaProductos.setRowHeight(28);
+        tablaProductos.setSelectionBackground(new java.awt.Color(200, 220, 255));
+        tablaProductos.setGridColor(new java.awt.Color(220, 220, 220));
         tablaProductos.setShowGrid(true);
+        tablaProductos.setIntercellSpacing(new java.awt.Dimension(1, 1));
+        tablaProductos.setFillsViewportHeight(true);
 
-        // Ajustar ancho de columnas
         TableColumnModel columnModel = tablaProductos.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(30);
+        columnModel.getColumn(0).setPreferredWidth(40);
         columnModel.getColumn(0).setMaxWidth(50);
-        columnModel.getColumn(1).setPreferredWidth(300);
-        columnModel.getColumn(2).setPreferredWidth(200);
+        columnModel.getColumn(1).setPreferredWidth(250);
+        columnModel.getColumn(2).setPreferredWidth(180);
         columnModel.getColumn(3).setPreferredWidth(80);
+        columnModel.getColumn(4).setPreferredWidth(100);
 
         JScrollPane scrollPane = new JScrollPane(tablaProductos);
-        scrollPane.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(150, 150, 150)),
-                "Vista previa de productos",
-                javax.swing.border.TitledBorder.LEFT,
-                javax.swing.border.TitledBorder.TOP,
-                new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12),
-                new Color(70, 70, 70)
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(5, 10, 5, 10),
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(new java.awt.Color(180, 180, 180), 1, true),
+                        "Vista previa de productos",
+                        javax.swing.border.TitledBorder.LEFT,
+                        javax.swing.border.TitledBorder.TOP,
+                        new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13),
+                        new java.awt.Color(80, 80, 80)
+                )
         ));
+        scrollPane.getViewport().setBackground(java.awt.Color.WHITE);
 
         add(scrollPane, BorderLayout.CENTER);
 
         // Panel inferior con botones mejorados
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        panelInferior.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+        panelInferior.setBackground(colorFondo);
+        panelInferior.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, colorBorde),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
 
         // Botones con estilo consistente
-        btnSeleccionarTodos = createStyledButton("Seleccionar Todos", new Color(60, 179, 113));
-        btnDeseleccionarTodos = createStyledButton("Deseleccionar Todos", new Color(220, 80, 60));
-        btnImportarSeleccionados = createStyledButton("Importar Seleccionados", new Color(65, 105, 225));
-        btnCancelar = createStyledButton("Cancelar", new Color(120, 120, 120));
+        btnSeleccionarTodos = createStyledButton("Seleccionar Todos", new java.awt.Color(39, 174, 96));
+        btnDeseleccionarTodos = createStyledButton("Deseleccionar Todos", new java.awt.Color(231, 76, 60));
+        btnImportarSeleccionados = createStyledButton("Importar Seleccionados", colorPrimario);
+        btnCancelar = createStyledButton("Cancelar", new java.awt.Color(149, 165, 166));
 
         panelInferior.add(btnSeleccionarTodos);
         panelInferior.add(btnDeseleccionarTodos);
+        panelInferior.add(Box.createHorizontalStrut(20));
         panelInferior.add(btnImportarSeleccionados);
         panelInferior.add(btnCancelar);
 
@@ -161,29 +247,100 @@ public class PanelImportarCodigo extends JDialog {
         cmbColumnaNombre.addActionListener(e -> actualizarVistaPrevia());
         cmbColumnaCodigo.addActionListener(e -> actualizarVistaPrevia());
         cmbColumnaCantidad.addActionListener(e -> actualizarVistaPrevia());
+        cmbColumnaPrecio.addActionListener(e -> actualizarVistaPrevia());
         btnSeleccionarTodos.addActionListener(e -> seleccionarTodos(true));
         btnDeseleccionarTodos.addActionListener(e -> seleccionarTodos(false));
         btnCancelar.addActionListener(e -> dispose());
         btnImportarSeleccionados.addActionListener(e -> importarProductos());
     }
 
+    // Renderizador personalizado para checkboxes centrados
+    class CheckboxRenderer extends JCheckBox implements TableCellRenderer {
+
+        public CheckboxRenderer() {
+            super();
+            setHorizontalAlignment(JLabel.CENTER);
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+
+            // Configurar el estado del checkbox basado en el valor de la celda
+            if (value instanceof Boolean) {
+                setSelected((Boolean) value);
+            } else {
+                setSelected(false);
+            }
+
+            // Cambiar colores basado en selección
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+
+            return this;
+        }
+    }
+
     // Método para crear botones con estilo consistente
-    private JButton createStyledButton(String text, Color bgColor) {
-        JButton button = new JButton(text);
+    private JButton createStyledButton(String text, java.awt.Color bgColor) {
+        javax.swing.JButton button = new javax.swing.JButton(text);
         button.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
         button.setBackground(bgColor);
-        button.setForeground(Color.WHITE);
+        button.setForeground(java.awt.Color.WHITE);
         button.setContentAreaFilled(false);
         button.setOpaque(true);
         button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(bgColor.darker(), 2),
-                BorderFactory.createEmptyBorder(6, 18, 6, 18)
+        button.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(bgColor.darker(), 1),
+                javax.swing.BorderFactory.createEmptyBorder(8, 16, 8, 16)
         ));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Efecto hover
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(bgColor.brighter());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(bgColor);
+            }
+        });
+
         return button;
     }
 
+    // Método para crear etiquetas con estilo
+    // Método para crear etiquetas con estilo
+    private javax.swing.JLabel createStyledLabel(String text) {
+        javax.swing.JLabel label = new javax.swing.JLabel(text);
+        label.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+        label.setForeground(new java.awt.Color(70, 70, 70));
+        return label;
+    }
+
+// Método para crear combos con estilo
+    private javax.swing.JComboBox<String> createStyledComboBox() {
+        javax.swing.JComboBox<String> combo = new javax.swing.JComboBox<>();
+        combo.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
+        combo.setBackground(java.awt.Color.WHITE);
+        combo.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(new java.awt.Color(200, 200, 200)),
+                javax.swing.BorderFactory.createEmptyBorder(4, 6, 4, 6)
+        ));
+        return combo;
+    }
+
+    // Los métodos restantes (cargarExcel, cambiarHoja, actualizarVistaPrevia, etc.)
+    // se mantienen exactamente igual que en tu código original
     private void cargarExcel() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xlsx)", "xlsx"));
@@ -198,14 +355,12 @@ public class PanelImportarCodigo extends JDialog {
             cabecerasExcel.clear();
 
             try (FileInputStream fis = new FileInputStream(archivo)) {
-                // Cerrar workbook anterior si existe
                 if (workbook != null) {
                     workbook.close();
                 }
 
                 workbook = new XSSFWorkbook(fis);
 
-                // Llenar combo de hojas
                 for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                     cmbHojasExcel.addItem(workbook.getSheetName(i));
                 }
@@ -235,23 +390,26 @@ public class PanelImportarCodigo extends JDialog {
             cmbColumnaNombre.removeAllItems();
             cmbColumnaCodigo.removeAllItems();
             cmbColumnaCantidad.removeAllItems();
-            cmbColumnaCantidad.addItem("(No usar)");
+            cmbColumnaPrecio.removeAllItems();
 
-            // Leer cabeceras
+            cmbColumnaCantidad.addItem("(No usar)");
+            cmbColumnaPrecio.addItem("(No usar)");
+
             for (Cell cell : headerRow) {
                 cabecerasExcel.add(cell.toString());
             }
 
-            // Llenar combos con cabeceras
             for (String cabecera : cabecerasExcel) {
                 cmbColumnaNombre.addItem(cabecera);
                 cmbColumnaCodigo.addItem(cabecera);
                 cmbColumnaCantidad.addItem(cabecera);
+                cmbColumnaPrecio.addItem(cabecera);
             }
 
             cmbColumnaNombre.setEnabled(true);
             cmbColumnaCodigo.setEnabled(true);
             cmbColumnaCantidad.setEnabled(true);
+            cmbColumnaPrecio.setEnabled(true);
             actualizarVistaPrevia();
 
         } catch (Exception ex) {
@@ -273,14 +431,17 @@ public class PanelImportarCodigo extends JDialog {
         int nombreColIndex = cmbColumnaNombre.getSelectedIndex();
         int codigoColIndex = cmbColumnaCodigo.getSelectedIndex();
         int cantidadColIndex = -1;
-        
-        // Verificar si se seleccionó una columna de cantidad
+        int precioColIndex = -1;
+
         if (cmbColumnaCantidad.getSelectedIndex() > 0) {
             cantidadColIndex = cmbColumnaCantidad.getSelectedIndex() - 1;
         }
 
-        // Leer hasta 100 filas para vista previa
-        int maxFilas = Math.min(sheet.getLastRowNum(), 100);
+        if (cmbColumnaPrecio.getSelectedIndex() > 0) {
+            precioColIndex = cmbColumnaPrecio.getSelectedIndex() - 1;
+        }
+
+        int maxFilas = Math.min(sheet.getLastRowNum(), 10000);
 
         for (int i = 1; i <= maxFilas; i++) {
             Row row = sheet.getRow(i);
@@ -290,14 +451,27 @@ public class PanelImportarCodigo extends JDialog {
 
             Cell nombreCell = row.getCell(nombreColIndex);
             Cell codigoCell = row.getCell(codigoColIndex);
-            Cell cantidadCell = (cantidadColIndex >= 0 && cantidadColIndex < row.getLastCellNum()) ? 
-                                row.getCell(cantidadColIndex) : null;
+            Cell cantidadCell = (cantidadColIndex >= 0 && cantidadColIndex < row.getLastCellNum())
+                    ? row.getCell(cantidadColIndex) : null;
+            Cell precioCell = (precioColIndex >= 0 && precioColIndex < row.getLastCellNum())
+                    ? row.getCell(precioColIndex) : null;
 
             String nombre = (nombreCell != null) ? obtenerValorCelda(nombreCell) : "";
             String codigo = (codigoCell != null) ? obtenerValorCelda(codigoCell) : "";
+            String precio = "";
+
+            if (precioCell != null) {
+                precio = obtenerValorCelda(precioCell);
+                try {
+                    double precioNum = Double.parseDouble(precio.replace(",", "."));
+                    precio = String.format("S/ %.2f", precioNum);
+                } catch (NumberFormatException ex) {
+                    // Mantener valor original si no es número
+                }
+            }
+
             int cantidad = 1;
-            
-            // Procesar la cantidad si existe la columna
+
             if (cantidadCell != null) {
                 try {
                     String cantidadStr = obtenerValorCelda(cantidadCell);
@@ -307,18 +481,17 @@ public class PanelImportarCodigo extends JDialog {
                 }
             }
 
-            // Mostrar filas con datos válidos
             if (!nombre.isEmpty() || !codigo.isEmpty()) {
-                modeloTabla.addRow(new Object[]{true, nombre, codigo, cantidad});
+                modeloTabla.addRow(new Object[]{true, nombre, codigo, cantidad, precio});
             }
         }
 
-        // Ajustar ancho de columnas automáticamente
         tablaProductos.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         TableColumnModel columnModel = tablaProductos.getColumnModel();
-        columnModel.getColumn(1).setPreferredWidth(300);
-        columnModel.getColumn(2).setPreferredWidth(200);
+        columnModel.getColumn(1).setPreferredWidth(250);
+        columnModel.getColumn(2).setPreferredWidth(180);
         columnModel.getColumn(3).setPreferredWidth(80);
+        columnModel.getColumn(4).setPreferredWidth(100);
     }
 
     private String obtenerValorCelda(Cell cell) {
@@ -350,9 +523,9 @@ public class PanelImportarCodigo extends JDialog {
             if ((Boolean) modeloTabla.getValueAt(i, 0)) {
                 String nombre = (String) modeloTabla.getValueAt(i, 1);
                 String codigo = (String) modeloTabla.getValueAt(i, 2);
+                String precio = (String) modeloTabla.getValueAt(i, 4);
                 int cantidad = 1;
-                
-                // Obtener la cantidad si existe en la tabla
+
                 Object cantidadObj = modeloTabla.getValueAt(i, 3);
                 if (cantidadObj instanceof Integer) {
                     cantidad = (Integer) cantidadObj;
@@ -363,16 +536,14 @@ public class PanelImportarCodigo extends JDialog {
                         cantidad = 1;
                     }
                 }
-                
+
                 int filaExcel = i + 2;
 
                 try {
-                    // Validación básica
                     if (codigo == null || codigo.trim().isEmpty()) {
                         throw new Exception("Código vacío");
                     }
 
-                    // Generar imagen del código de barras
                     BufferedImage imagen = servicio.generarImagenCodigo(
                             codigo, BarcodeFormat.CODE_128, 350, 120
                     );
@@ -381,9 +552,8 @@ public class PanelImportarCodigo extends JDialog {
                         throw new Exception("Error generando imagen");
                     }
 
-                    // Agregar tantas copias como indique la cantidad
                     for (int j = 0; j < cantidad; j++) {
-                        productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128));
+                        productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128, precio));
                         contador++;
                     }
                 } catch (Exception ex) {
@@ -405,7 +575,6 @@ public class PanelImportarCodigo extends JDialog {
             generadorGU.mostrarListaProductos();
         }
 
-        // Mostrar resumen de importación
         if (errores > 0) {
             JOptionPane.showMessageDialog(this,
                     "Importación completada con errores:\n"
@@ -418,20 +587,6 @@ public class PanelImportarCodigo extends JDialog {
                     "Se importaron " + contador + " productos exitosamente!",
                     "Importación Exitosa",
                     JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "No se seleccionaron productos válidos para importar",
-                    "Advertencia",
-                    JOptionPane.WARNING_MESSAGE);
-        }
-
-        // Cerrar workbook al finalizar
-        try {
-            if (workbook != null) {
-                workbook.close();
-            }
-        } catch (Exception ex) {
-            System.err.println("Error cerrando workbook: " + ex.getMessage());
         }
     }
 

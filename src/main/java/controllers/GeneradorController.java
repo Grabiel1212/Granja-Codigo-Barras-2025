@@ -40,9 +40,8 @@ public class GeneradorController {
         return generadorService.generarImagenCodigo(codigo, formato, ancho, alto);
     }
 
-    public void guardarProducto(String nombre, String codigo, BufferedImage imagen, BarcodeFormat formato) {
-        listaProductos.add(new Producto(nombre, codigo, imagen, formato));
-      //  vista.update(listaProductos.size());
+    public void guardarProducto(String nombre, String codigo, BufferedImage imagen, BarcodeFormat formato, String precio) {
+        listaProductos.add(new Producto(nombre, codigo, imagen, formato, precio));
     }
 
     public List<Producto> getListaProductos() {

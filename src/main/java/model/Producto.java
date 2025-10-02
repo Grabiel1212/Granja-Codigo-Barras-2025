@@ -20,4 +20,15 @@ public class Producto {
     public BufferedImage imagen;
     public BarcodeFormat  formato;
     
+      public String precio; // Nuevo atributo precio
+    
+    // Constructor sobrecargado para mantener compatibilidad
+    public Producto(String nombre, String codigo, BufferedImage imagen, BarcodeFormat formato) {
+        this.nombre = nombre;
+        this.codigo = codigo;
+        this.imagen = imagen;
+        this.formato = formato;
+        this.precio = ""; // Precio por defecto vacío
+    }
+    
 }

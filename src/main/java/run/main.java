@@ -13,6 +13,7 @@ import vista.GeneradorGU;
  * @author juang
  */
 public class main {
+
     public static void main(String[] args) {
         // Establecer look & feel del sistema
         try {

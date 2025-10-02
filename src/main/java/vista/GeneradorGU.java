@@ -77,6 +77,8 @@ public class GeneradorGU extends JFrame {
     private JButton btnVerLista;
     private JButton btnImportarExcel;
     private JButton btnImportarCodigo;
+    private JTextField txtPrecio; // Agregar esta variable
+    private JLabel lblPrecioPreview; // Agregar esta variable
 
     private List<Producto> listaProductos = new ArrayList<>();
 
@@ -267,8 +269,25 @@ public class GeneradorGU extends JFrame {
         btnGenerarCodigo.setBackground(COLOR_ACENTO);
         panel.add(btnGenerarCodigo, gbc);
 
-        // Combo formato
+        // Campo de precio (NUEVO)
         gbc.gridy = 3;
+        gbc.gridx = 0;
+        panel.add(new JLabel("Precio (S/):"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        txtPrecio = new JTextField();
+        txtPrecio.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtPrecio.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(COLOR_BORDE),
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
+        // Placeholder para indicar el formato
+        txtPrecio.setToolTipText("Ejemplo: 25.50");
+        panel.add(txtPrecio, gbc);
+
+        // Combo formato (se mueve a la siguiente fila)
+        gbc.gridy = 4;
         gbc.gridx = 0;
         panel.add(new JLabel("Formato:"), gbc);
 
@@ -287,15 +306,14 @@ public class GeneradorGU extends JFrame {
         });
         panel.add(cmbFormato, gbc);
 
-        // Botón de ayuda
+        // Botón de ayuda (se mueve a la siguiente fila)
         gbc.gridx = 2;
         gbc.weightx = 0.0;
         JButton btnAyuda = crearBoton("Ayuda", e -> mostrarAyuda());
         btnAyuda.setBackground(new Color(149, 165, 166));
         panel.add(btnAyuda, gbc);
-
-        // Botón para guardar producto
-        gbc.gridy = 4;
+        // Botón para guardar producto (se mueve a la siguiente fila)
+        gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 3;
         gbc.weightx = 1.0;
@@ -303,7 +321,6 @@ public class GeneradorGU extends JFrame {
         btnGuardarProducto.setBackground(new Color(46, 204, 113)); // Verde
         btnGuardarProducto.setEnabled(false);
         panel.add(btnGuardarProducto, gbc);
-
         return panel;
     }
 
@@ -340,7 +357,7 @@ public class GeneradorGU extends JFrame {
         lblNombrePreview = new JLabel(" ", JLabel.CENTER);
         lblNombrePreview.setFont(new Font("Arial", Font.BOLD, 18));
         lblNombrePreview.setForeground(COLOR_PRIMARIO);
-        lblNombrePreview.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        lblNombrePreview.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         panelImagen.add(lblNombrePreview, BorderLayout.NORTH);
 
         // Etiqueta para imagen
@@ -356,12 +373,25 @@ public class GeneradorGU extends JFrame {
         lblImagen.setVerticalTextPosition(JLabel.CENTER);
         panelImagen.add(lblImagen, BorderLayout.CENTER);
 
+        // Panel sur para precio y código
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.setOpaque(false);
+
+        // Label para mostrar el precio (NUEVO)
+        lblPrecioPreview = new JLabel(" ", JLabel.CENTER);
+        lblPrecioPreview.setFont(new Font("Arial", Font.BOLD, 20));
+        lblPrecioPreview.setForeground(new Color(231, 76, 60)); // Color rojo llamativo
+        lblPrecioPreview.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        southPanel.add(lblPrecioPreview, BorderLayout.NORTH);
+
         // Label para mostrar el número del código
         lblNumeroCodigo = new JLabel(" ", JLabel.CENTER);
         lblNumeroCodigo.setFont(new Font("Arial", Font.BOLD, 18));
         lblNumeroCodigo.setForeground(COLOR_TEXTO);
-        lblNumeroCodigo.setBorder(BorderFactory.createEmptyBorder(15, 0, 5, 0));
-        panelImagen.add(lblNumeroCodigo, BorderLayout.SOUTH);
+        lblNumeroCodigo.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        southPanel.add(lblNumeroCodigo, BorderLayout.SOUTH);
+
+        panelImagen.add(southPanel, BorderLayout.SOUTH);
 
         scrollPane.setViewportView(panelImagen);
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -527,6 +557,7 @@ public class GeneradorGU extends JFrame {
         try {
             String nombre = txtNombreProducto.getText();
             String codigo = txtCodigo.getText();
+            String precio = txtPrecio.getText().trim(); // Obtener precio
 
             if (nombre.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
@@ -583,6 +614,13 @@ public class GeneradorGU extends JFrame {
                         // Mostrar el nombre del producto
                         lblNombrePreview.setText(nombre);
 
+                        // Mostrar el precio formateado (NUEVO)
+                        if (!precio.isEmpty()) {
+                            lblPrecioPreview.setText("S/ " + precio);
+                        } else {
+                            lblPrecioPreview.setText("");
+                        }
+
                         // Mostrar la imagen en el JLabel
                         lblImagen.setIcon(new ImageIcon(imagenCodigo));
                         // Limpiar el mensaje inicial
@@ -622,6 +660,7 @@ public class GeneradorGU extends JFrame {
     private void guardarProducto() {
         String nombre = txtNombreProducto.getText().trim();
         String codigo = txtCodigo.getText().trim();
+        String precio = txtPrecio.getText().trim(); // Obtener el precio
 
         if (nombre.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor ingrese un nombre para el producto", "Error", JOptionPane.WARNING_MESSAGE);
@@ -645,8 +684,11 @@ public class GeneradorGU extends JFrame {
                 formato = BarcodeFormat.CODE_128;
         }
 
-        // Agregar producto a la lista
-        Producto nuevoProducto = new Producto(nombre, codigo, imagenCodigo, formato);
+        // Formatear el precio para mostrar S/
+        String precioFormateado = precio.isEmpty() ? "" : "S/ " + precio;
+
+        // Agregar producto a la lista con el precio
+        Producto nuevoProducto = new Producto(nombre, codigo, imagenCodigo, formato, precioFormateado);
         listaProductos.add(nuevoProducto);
 
         // Actualizar contador en botón de lista
@@ -660,7 +702,9 @@ public class GeneradorGU extends JFrame {
         // Limpiar campos para el siguiente producto
         txtNombreProducto.setText("");
         txtCodigo.setText("");
+        txtPrecio.setText(""); // Limpiar campo de precio
         lblNombrePreview.setText("");
+        lblPrecioPreview.setText(""); // Limpiar preview de precio
         lblImagen.setIcon(null);
         lblImagen.setText("<html><div style='text-align: center;'>Producto guardado!<br>Ingrese un nuevo producto</div></html>");
         lblNumeroCodigo.setText("");
@@ -704,11 +748,24 @@ public class GeneradorGU extends JFrame {
                         BorderFactory.createEmptyBorder(10, 10, 10, 10))
                 );
 
-                // Nombre
+// Panel superior con nombre y precio
+                JPanel topPanel = new JPanel(new BorderLayout());
+                topPanel.setOpaque(false);
+
                 JLabel nameLabel = new JLabel(producto.nombre, JLabel.CENTER);
                 nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
                 nameLabel.setForeground(COLOR_TEXTO);
-                card.add(nameLabel, BorderLayout.NORTH);
+
+// Mostrar precio si existe (NUEVO)
+                if (producto.precio != null && !producto.precio.isEmpty()) {
+                    JLabel priceLabel = new JLabel(producto.precio, JLabel.RIGHT);
+                    priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                    priceLabel.setForeground(new Color(231, 76, 60)); // Rojo llamativo
+                    topPanel.add(priceLabel, BorderLayout.EAST);
+                }
+
+                topPanel.add(nameLabel, BorderLayout.CENTER);
+                card.add(topPanel, BorderLayout.NORTH);
 
                 // Imagen
                 JLabel imageLabel = new JLabel(new ImageIcon(producto.imagen), JLabel.CENTER);
@@ -959,14 +1016,15 @@ public class GeneradorGU extends JFrame {
                         table.setSpacingBefore(10);
                         table.setSpacingAfter(10);
 
+                        // Mantener altura fija para consistencia
                         float padding = 5;
-                        float cellHeight = 50;
+                        float cellHeight = 55; // Altura consistente
 
                         for (Producto producto : productosValidos) {
                             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                                 PdfPCell cell = new PdfPCell();
-                                cell.setBorder(Rectangle.BOX); // Borde visible (marco)
-                                cell.setBorderWidth(0.5f);      // Grosor del borde
+                                cell.setBorder(Rectangle.BOX);
+                                cell.setBorderWidth(0.5f);
                                 cell.setPadding(padding);
                                 cell.setFixedHeight(cellHeight);
 
@@ -974,23 +1032,42 @@ public class GeneradorGU extends JFrame {
                                 byte[] imageBytes = baos.toByteArray();
 
                                 Image img = Image.getInstance(imageBytes);
-                                img.scaleToFit(60, 25);
+                                img.scaleToFit(50, 20); // Tamaño fijo de imagen
                                 img.setAlignment(Element.ALIGN_CENTER);
 
+                                // Fuente para el nombre - tamaño reducido para que quepa todo
                                 com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 6f, com.itextpdf.text.Font.NORMAL
+                                        com.itextpdf.text.FontFactory.HELVETICA, 5f, com.itextpdf.text.Font.NORMAL
                                 );
-                                String nombreReducido = resumirTexto(producto.nombre, 3);
+                                String nombreReducido = resumirTexto(producto.nombre, 2); // Reducir a 2 palabras
                                 com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(nombreReducido, nombreFont);
                                 nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
 
+                                // PRECIO - en negrita negra
+                                com.itextpdf.text.Paragraph precioParrafo = null;
+                                if (producto.precio != null && !producto.precio.isEmpty()) {
+                                    com.itextpdf.text.Font precioFont = com.itextpdf.text.FontFactory.getFont(
+                                            com.itextpdf.text.FontFactory.HELVETICA_BOLD, 6f, com.itextpdf.text.Font.NORMAL
+                                    );
+                                    precioParrafo = new com.itextpdf.text.Paragraph(producto.precio, precioFont);
+                                    precioParrafo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                                }
+
+                                // Fuente para el código - tamaño consistente
                                 com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 6f
+                                        com.itextpdf.text.FontFactory.HELVETICA, 5f
                                 );
                                 com.itextpdf.text.Paragraph codigo = new com.itextpdf.text.Paragraph(producto.codigo, codigoFont);
                                 codigo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
 
+                                // Agregar elementos a la celda en orden correcto
                                 cell.addElement(nombre);
+
+                                // Agregar precio si existe
+                                if (precioParrafo != null) {
+                                    cell.addElement(precioParrafo);
+                                }
+
                                 cell.addElement(img);
                                 cell.addElement(codigo);
                                 table.addCell(cell);
@@ -1005,7 +1082,7 @@ public class GeneradorGU extends JFrame {
                         if (celdasFaltantes < numColumnas && celdasFaltantes > 0) {
                             for (int i = 0; i < celdasFaltantes; i++) {
                                 PdfPCell emptyCell = new PdfPCell();
-                                emptyCell.setBorder(Rectangle.BOX); // También con marco visible
+                                emptyCell.setBorder(Rectangle.BOX);
                                 emptyCell.setBorderWidth(0.5f);
                                 table.addCell(emptyCell);
                             }
