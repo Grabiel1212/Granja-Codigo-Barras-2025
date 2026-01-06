@@ -1,56 +1,77 @@
 package vista;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import model.Producto;
-import service.GeneradorService;
-import helpers.DottedLineSeparator;
-import helpers.RoundedBorder;
-
-import javax.swing.*;
-import javax.swing.border.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.RoundRectangle2D;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.awt.print.*;
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
+
 import javax.imageio.ImageIO;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
-import java.io.FileOutputStream;
-import com.itextpdf.text.Rectangle;
-import java.awt.Font;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Font.FontFamily;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Image;
-import java.io.ByteArrayOutputStream;
+import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
+import javax.swing.ButtonModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
+import com.google.zxing.BarcodeFormat;
 import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
-
-import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.Image;
-import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-import java.io.File;
+import helpers.RoundedBorder;
+import model.Producto;
+import service.GeneradorService;
 
 public class GeneradorGU extends JFrame {
 
@@ -77,6 +98,7 @@ public class GeneradorGU extends JFrame {
     private JButton btnVerLista;
     private JButton btnImportarExcel;
     private JButton btnImportarCodigo;
+    private JButton btnImportarTexto;
     private JTextField txtPrecio; // Agregar esta variable
     private JLabel lblPrecioPreview; // Agregar esta variable
 
@@ -133,8 +155,7 @@ public class GeneradorGU extends JFrame {
                 // Fondo con gradiente
                 GradientPaint gradient = new GradientPaint(
                         0, 0, COLOR_PRIMARIO,
-                        getWidth(), 0, COLOR_SECUNDARIO
-                );
+                        getWidth(), 0, COLOR_SECUNDARIO);
                 g2d.setPaint(gradient);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
 
@@ -243,8 +264,7 @@ public class GeneradorGU extends JFrame {
         txtNombreProducto.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtNombreProducto.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COLOR_BORDE),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
         panel.add(txtNombreProducto, gbc);
 
         // Campo de código
@@ -258,8 +278,7 @@ public class GeneradorGU extends JFrame {
         txtCodigo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtCodigo.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COLOR_BORDE),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
         panel.add(txtCodigo, gbc);
 
         // Botón generar nuevo
@@ -280,8 +299,7 @@ public class GeneradorGU extends JFrame {
         txtPrecio.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtPrecio.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COLOR_BORDE),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
         // Placeholder para indicar el formato
         txtPrecio.setToolTipText("Ejemplo: 25.50");
         panel.add(txtPrecio, gbc);
@@ -293,7 +311,7 @@ public class GeneradorGU extends JFrame {
 
         gbc.gridx = 1;
         gbc.weightx = 1.0;
-        cmbFormato = new JComboBox<>(new String[]{"CODE_128", "QR_CODE", "EAN_13"});
+        cmbFormato = new JComboBox<>(new String[] { "CODE_128", "QR_CODE", "EAN_13" });
         cmbFormato.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cmbFormato.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -329,8 +347,7 @@ public class GeneradorGU extends JFrame {
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createCompoundBorder(
                 new RoundedBorder(15, COLOR_BORDE),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)
-        ));
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)));
 
         // Título de sección
         JLabel lblSeccion = new JLabel("Vista Previa del Código");
@@ -350,8 +367,7 @@ public class GeneradorGU extends JFrame {
         panelImagen.setBackground(Color.WHITE);
         panelImagen.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)));
 
         // Etiqueta para nombre del producto
         lblNombrePreview = new JLabel(" ", JLabel.CENTER);
@@ -412,6 +428,10 @@ public class GeneradorGU extends JFrame {
         btnImportarCodigo = crearBoton("Importar Codigo", e -> abrirPanelImportarCodigo());
         btnImportarCodigo.setBackground(new Color(241, 196, 15));
         panel.add(btnImportarCodigo);
+
+        btnImportarTexto = crearBoton("Importar Codigo Texto", e -> PanelImportarTexto());
+        btnImportarTexto.setBackground(new Color(241, 196, 15));
+        panel.add(btnImportarTexto);
 
         // Botón generar imagen
         JButton btnGenerarImagen = crearBoton("Generar Imagen", e -> generarImagen());
@@ -517,6 +537,10 @@ public class GeneradorGU extends JFrame {
         new PanelImportarCodigo(this).setVisible(true);
     }
 
+    private void PanelImportarTexto() {
+        new PanelImportarTexto(this).setVisible(true);
+    }
+
     private void mostrarAyuda() {
         String mensaje = "<html><div style='width: 300px; text-align: center;'>"
                 + "<h2>Ayuda Rápida</h2>"
@@ -601,8 +625,7 @@ public class GeneradorGU extends JFrame {
                             codigo,
                             formato,
                             350,
-                            formato == BarcodeFormat.QR_CODE ? 350 : 120
-                    );
+                            formato == BarcodeFormat.QR_CODE ? 350 : 120);
 
                     return null;
                 }
@@ -663,12 +686,14 @@ public class GeneradorGU extends JFrame {
         String precio = txtPrecio.getText().trim(); // Obtener el precio
 
         if (nombre.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor ingrese un nombre para el producto", "Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Por favor ingrese un nombre para el producto", "Error",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         if (imagenCodigo == null) {
-            JOptionPane.showMessageDialog(this, "Primero genere una imagen del código de barras", "Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Primero genere una imagen del código de barras", "Error",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -696,7 +721,8 @@ public class GeneradorGU extends JFrame {
 
         // Mostrar mensaje de éxito
         JOptionPane.showMessageDialog(this,
-                "<html><div style='text-align:center;'>Producto guardado exitosamente!<br>Total: " + listaProductos.size() + "</div></html>",
+                "<html><div style='text-align:center;'>Producto guardado exitosamente!<br>Total: "
+                        + listaProductos.size() + "</div></html>",
                 "Producto Guardado", JOptionPane.INFORMATION_MESSAGE);
 
         // Limpiar campos para el siguiente producto
@@ -706,7 +732,8 @@ public class GeneradorGU extends JFrame {
         lblNombrePreview.setText("");
         lblPrecioPreview.setText(""); // Limpiar preview de precio
         lblImagen.setIcon(null);
-        lblImagen.setText("<html><div style='text-align: center;'>Producto guardado!<br>Ingrese un nuevo producto</div></html>");
+        lblImagen.setText(
+                "<html><div style='text-align: center;'>Producto guardado!<br>Ingrese un nuevo producto</div></html>");
         lblNumeroCodigo.setText("");
         btnGuardarProducto.setEnabled(false);
     }
@@ -745,10 +772,9 @@ public class GeneradorGU extends JFrame {
                 card.setBackground(Color.WHITE);
                 card.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(COLOR_BORDE),
-                        BorderFactory.createEmptyBorder(10, 10, 10, 10))
-                );
+                        BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
-// Panel superior con nombre y precio
+                // Panel superior con nombre y precio
                 JPanel topPanel = new JPanel(new BorderLayout());
                 topPanel.setOpaque(false);
 
@@ -756,7 +782,7 @@ public class GeneradorGU extends JFrame {
                 nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
                 nameLabel.setForeground(COLOR_TEXTO);
 
-// Mostrar precio si existe (NUEVO)
+                // Mostrar precio si existe (NUEVO)
                 if (producto.precio != null && !producto.precio.isEmpty()) {
                     JLabel priceLabel = new JLabel(producto.precio, JLabel.RIGHT);
                     priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -786,7 +812,8 @@ public class GeneradorGU extends JFrame {
                 btnEliminar.setFocusPainted(false);
                 btnEliminar.addActionListener(e -> {
                     int confirm = JOptionPane.showConfirmDialog(dialog,
-                            "¿Seguro que quieres eliminar este producto?", "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+                            "¿Seguro que quieres eliminar este producto?", "Confirmar eliminación",
+                            JOptionPane.YES_NO_OPTION);
                     if (confirm == JOptionPane.YES_OPTION) {
                         listaProductos.remove(producto);
                         dialog.dispose(); // cerrar para volver a generar
@@ -840,7 +867,8 @@ public class GeneradorGU extends JFrame {
         buttonPanel.add(btnEliminarTodos);
         btnEliminarTodos.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(dialog,
-                    "¿Seguro que quieres eliminar TODOS los productos?", "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+                    "¿Seguro que quieres eliminar TODOS los productos?", "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 listaProductos.clear();
                 dialog.dispose();
@@ -880,8 +908,7 @@ public class GeneradorGU extends JFrame {
                 margin * 72 / 25.4,
                 margin * 72 / 25.4,
                 (paperWidth - 2 * margin) * 72 / 25.4,
-                (paperHeight - 2 * margin) * 72 / 25.4
-        );
+                (paperHeight - 2 * margin) * 72 / 25.4);
         pageFormat.setPaper(paper);
         job.setPrintable(new Printable() {
             @Override
@@ -924,14 +951,16 @@ public class GeneradorGU extends JFrame {
                         double y = row * cellHeight + padding;
 
                         // Dibujar código de barras reducido
-                        BufferedImage img = resizeImage(producto.imagen, (int) contentWidth, (int) (contentHeight * 0.7));
+                        BufferedImage img = resizeImage(producto.imagen, (int) contentWidth,
+                                (int) (contentHeight * 0.7));
                         g2d.drawImage(img, (int) x, (int) y, null);
 
                         // Dibujar texto reducido
                         g2d.setFont(new Font("Arial", Font.PLAIN, 6));
                         String text = producto.codigo;
                         int textWidth = g2d.getFontMetrics().stringWidth(text);
-                        g2d.drawString(text, (int) (x + (contentWidth - textWidth) / 2), (int) (y + contentHeight * 0.7 + 8));
+                        g2d.drawString(text, (int) (x + (contentWidth - textWidth) / 2),
+                                (int) (y + contentHeight * 0.7 + 8));
 
                         currentIndex++;
                     }
@@ -1037,27 +1066,27 @@ public class GeneradorGU extends JFrame {
 
                                 // Fuente para el nombre - tamaño reducido para que quepa todo
                                 com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 5f, com.itextpdf.text.Font.NORMAL
-                                );
+                                        com.itextpdf.text.FontFactory.HELVETICA, 5f, com.itextpdf.text.Font.NORMAL);
                                 String nombreReducido = resumirTexto(producto.nombre, 2); // Reducir a 2 palabras
-                                com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(nombreReducido, nombreFont);
+                                com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(nombreReducido,
+                                        nombreFont);
                                 nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
 
                                 // PRECIO - en negrita negra
                                 com.itextpdf.text.Paragraph precioParrafo = null;
                                 if (producto.precio != null && !producto.precio.isEmpty()) {
                                     com.itextpdf.text.Font precioFont = com.itextpdf.text.FontFactory.getFont(
-                                            com.itextpdf.text.FontFactory.HELVETICA_BOLD, 6f, com.itextpdf.text.Font.NORMAL
-                                    );
+                                            com.itextpdf.text.FontFactory.HELVETICA_BOLD, 6f,
+                                            com.itextpdf.text.Font.NORMAL);
                                     precioParrafo = new com.itextpdf.text.Paragraph(producto.precio, precioFont);
                                     precioParrafo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
                                 }
 
                                 // Fuente para el código - tamaño consistente
                                 com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 5f
-                                );
-                                com.itextpdf.text.Paragraph codigo = new com.itextpdf.text.Paragraph(producto.codigo, codigoFont);
+                                        com.itextpdf.text.FontFactory.HELVETICA, 5f);
+                                com.itextpdf.text.Paragraph codigo = new com.itextpdf.text.Paragraph(producto.codigo,
+                                        codigoFont);
                                 codigo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
 
                                 // Agregar elementos a la celda en orden correcto
@@ -1203,11 +1232,12 @@ public class GeneradorGU extends JFrame {
                         ImageIO.write(imagenCompleta, "PNG", fileToSave);
                         JOptionPane.showMessageDialog(GeneradorGU.this,
                                 "<html><div style='text-align:center;'>Imagen guardada exitosamente en:<br>"
-                                + fileToSave.getAbsolutePath() + "</div></html>",
+                                        + fileToSave.getAbsolutePath() + "</div></html>",
                                 "Guardado exitoso", JOptionPane.INFORMATION_MESSAGE);
                     } catch (Exception e) {
                         JOptionPane.showMessageDialog(GeneradorGU.this,
-                                "<html><div style='text-align:center;'>Error al guardar:<br>" + e.getMessage() + "</div></html>",
+                                "<html><div style='text-align:center;'>Error al guardar:<br>" + e.getMessage()
+                                        + "</div></html>",
                                 "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
