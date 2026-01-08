@@ -529,94 +529,102 @@ public class PanelImportarTexto extends JDialog {
         }
     }
 
-    private void importarProductos() {
-        if (modeloTabla.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(this,
-                    "No hay datos para importar",
-                    "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+  private void importarProductos() {
+    if (modeloTabla.getRowCount() == 0) {
+        JOptionPane.showMessageDialog(this,
+                "No hay datos para importar",
+                "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
 
-        productosImportados.clear();
-        int contador = 0;
-        int errores = 0;
-        StringBuilder erroresDetalle = new StringBuilder();
+    productosImportados.clear();
+    int contador = 0;
+    int errores = 0;
+    StringBuilder erroresDetalle = new StringBuilder();
+    
+    // Creamos una lista para almacenar las cantidades de cada producto
+    List<Integer> cantidades = new ArrayList<>();
 
-        for (int i = 0; i < modeloTabla.getRowCount(); i++) {
-            if ((Boolean) modeloTabla.getValueAt(i, 0)) {
-                String nombre = (String) modeloTabla.getValueAt(i, 1);
-                String codigo = (String) modeloTabla.getValueAt(i, 2);
-                String precio = (String) modeloTabla.getValueAt(i, 4);
-                int cantidad = 1;
+    for (int i = 0; i < modeloTabla.getRowCount(); i++) {
+        if ((Boolean) modeloTabla.getValueAt(i, 0)) {
+            String nombre = (String) modeloTabla.getValueAt(i, 1);
+            String codigo = (String) modeloTabla.getValueAt(i, 2);
+            String precio = (String) modeloTabla.getValueAt(i, 4);
+            int cantidad = 1;
 
-                Object cantidadObj = modeloTabla.getValueAt(i, 3);
-                if (cantidadObj instanceof Integer) {
-                    cantidad = (Integer) cantidadObj;
-                } else if (cantidadObj instanceof String) {
-                    try {
-                        cantidad = Integer.parseInt((String) cantidadObj);
-                    } catch (NumberFormatException ex) {
-                        cantidad = 1;
-                    }
-                }
-
-                int filaExcel = i + 2;
-
+            Object cantidadObj = modeloTabla.getValueAt(i, 3);
+            if (cantidadObj instanceof Integer) {
+                cantidad = (Integer) cantidadObj;
+            } else if (cantidadObj instanceof String) {
                 try {
-                    if (nombre == null || nombre.trim().isEmpty()) {
-                        throw new Exception("Nombre vacío");
-                    }
-                    if (codigo == null || codigo.trim().isEmpty()) {
-                        throw new Exception("Código vacío");
-                    }
-                    if (precio == null || precio.trim().isEmpty()) {
-                        throw new Exception("Precio vacío");
-                    }
-
-                    for (int j = 0; j < cantidad; j++) {
-                        productosImportados.add(new Producto(nombre, codigo, null, null, precio));
-                        contador++;
-                    }
-                } catch (Exception ex) {
-                    errores++;
-                    erroresDetalle.append("\nFila ")
-                            .append(filaExcel)
-                            .append(": ")
-                            .append(ex.getMessage())
-                            .append(" (")
-                            .append(nombre)
-                            .append(")");
+                    cantidad = Integer.parseInt((String) cantidadObj);
+                } catch (NumberFormatException ex) {
+                    cantidad = 1;
                 }
             }
-        }
 
-        if (contador > 0) {
-            // Cerrar este panel y abrir el panel de previsualización
-            dispose();
-            PanelPrevisualizarTarjetas panelPrevisualizar = new PanelPrevisualizarTarjetas(generadorGU,
-                    productosImportados);
-            panelPrevisualizar.setVisible(true);
+            int filaExcel = i + 2;
 
-            if (errores > 0) {
-                JOptionPane.showMessageDialog(this,
-                        "Importación completada con errores:\n"
-                                + "• Productos importados: " + contador + "\n"
-                                + "• Errores: " + errores + erroresDetalle.toString(),
-                        "Resultado de Importación",
-                        JOptionPane.WARNING_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Se importaron " + contador + " productos exitosamente!",
-                        "Importación Exitosa",
-                        JOptionPane.INFORMATION_MESSAGE);
+            try {
+                if (nombre == null || nombre.trim().isEmpty()) {
+                    throw new Exception("Nombre vacío");
+                }
+                if (codigo == null || codigo.trim().isEmpty()) {
+                    throw new Exception("Código vacío");
+                }
+                if (precio == null || precio.trim().isEmpty()) {
+                    throw new Exception("Precio vacío");
+                }
+
+                // Agregamos el producto a la lista
+                productosImportados.add(new Producto(nombre, codigo, null, null, precio));
+                // Guardamos la cantidad en una lista paralela
+                cantidades.add(cantidad);
+                contador += cantidad; // Sumamos al total de tarjetas
+
+            } catch (Exception ex) {
+                errores++;
+                erroresDetalle.append("\nFila ")
+                        .append(filaExcel)
+                        .append(": ")
+                        .append(ex.getMessage())
+                        .append(" (")
+                        .append(nombre)
+                        .append(")");
             }
-        } else {
-            JOptionPane.showMessageDialog(this,
-                    "No se importó ningún producto. Verifique los datos seleccionados.",
-                    "Sin productos",
-                    JOptionPane.WARNING_MESSAGE);
         }
     }
+
+    if (contador > 0) {
+        // Cerrar este panel y abrir el panel de previsualización
+        dispose();
+        // Pasamos las cantidades como parámetro adicional
+        PanelPrevisualizarTarjetas panelPrevisualizar = new PanelPrevisualizarTarjetas(generadorGU,
+                productosImportados, cantidades);
+        panelPrevisualizar.setVisible(true);
+
+        if (errores > 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Importación completada con errores:\n"
+                            + "• Productos únicos importados: " + productosImportados.size() + "\n"
+                            + "• Total de tarjetas a generar: " + contador + "\n"
+                            + "• Errores: " + errores + erroresDetalle.toString(),
+                    "Resultado de Importación",
+                    JOptionPane.WARNING_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Se importaron " + productosImportados.size() + " productos únicos.\n"
+                    + "Se generarán " + contador + " tarjetas en total.",
+                    "Importación Exitosa",
+                    JOptionPane.INFORMATION_MESSAGE);
+        }
+    } else {
+        JOptionPane.showMessageDialog(this,
+                "No se importó ningún producto. Verifique los datos seleccionados.",
+                "Sin productos",
+                JOptionPane.WARNING_MESSAGE);
+    }
+}
 
     @Override
     public void dispose() {

@@ -8,6 +8,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class PanelPrevisualizarTarjetas extends JDialog {
 
     private GeneradorGU generadorGU;
     private List<Producto> productos;
+    private List<Integer> cantidades; // Lista para almacenar las cantidades
     private JPanel cardsPanel;
 
     // Colores para la interfaz
@@ -36,10 +38,18 @@ public class PanelPrevisualizarTarjetas extends JDialog {
     private Color colorFondo = new Color(245, 245, 245);
     private Color colorBorde = new Color(220, 220, 220);
 
-    public PanelPrevisualizarTarjetas(GeneradorGU parent, List<Producto> productos) {
+    public PanelPrevisualizarTarjetas(GeneradorGU parent, List<Producto> productos, List<Integer> cantidades) {
         super(parent, "Vista Previa de Tarjetas", true);
         this.generadorGU = parent;
         this.productos = productos;
+        this.cantidades = cantidades; // Guardamos las cantidades
+        
+        // Calcular total de tarjetas sumando todas las cantidades
+        int totalTarjetas = 0;
+        for (Integer cantidad : cantidades) {
+            totalTarjetas += cantidad;
+        }
+        
         setSize(1000, 700);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout());
@@ -47,7 +57,7 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         getContentPane().setBackground(colorFondo);
 
         // Panel de título
-        JPanel titlePanel = crearTitlePanel();
+        JPanel titlePanel = crearTitlePanel(totalTarjetas);
         add(titlePanel, BorderLayout.NORTH);
 
         // Panel de tarjetas
@@ -58,12 +68,16 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private JPanel crearTitlePanel() {
+    private JPanel crearTitlePanel(int totalTarjetas) {
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setBackground(colorPrimario);
         titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
 
-        JLabel titleLabel = new JLabel("Vista Previa de Tarjetas (" + productos.size() + " productos)", JLabel.CENTER);
+        JLabel titleLabel = new JLabel(
+            "<html><center>Vista Previa de Tarjetas<br>" +
+            "<font size='3'>" + productos.size() + " productos únicos | " + totalTarjetas + " tarjetas a generar</font></center></html>",
+            JLabel.CENTER
+        );
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         titleLabel.setForeground(Color.WHITE);
         titlePanel.add(titleLabel, BorderLayout.CENTER);
@@ -82,9 +96,11 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         cardsPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         cardsPanel.setBackground(colorFondo);
 
-        // Crear tarjetas para cada producto
-        for (Producto producto : productos) {
-            JPanel card = crearTarjetaProducto(producto);
+        // Crear tarjetas para cada producto (una por producto, mostrando la cantidad)
+        for (int i = 0; i < productos.size(); i++) {
+            Producto producto = productos.get(i);
+            int cantidad = cantidades.get(i);
+            JPanel card = crearTarjetaProducto(producto, cantidad);
             cardsPanel.add(card);
         }
 
@@ -94,7 +110,7 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private JPanel crearTarjetaProducto(Producto producto) {
+    private JPanel crearTarjetaProducto(Producto producto, int cantidad) {
         JPanel card = new JPanel(new BorderLayout(5, 5));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -102,28 +118,41 @@ public class PanelPrevisualizarTarjetas extends JDialog {
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)));
         card.setPreferredSize(new Dimension(250, 150));
 
-        // Nombre del producto (arriba, tamaño normal)
+        // Nombre del producto
         JLabel nombreLabel = new JLabel("<html><center>" + producto.nombre + "</center></html>");
         nombreLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         nombreLabel.setHorizontalAlignment(SwingConstants.CENTER);
         nombreLabel.setForeground(new Color(60, 60, 60));
 
-        // Precio (centro, en rojo)
+        // Precio
         JLabel precioLabel = new JLabel("<html><center><b>" + producto.precio + "</b></center></html>");
         precioLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         precioLabel.setHorizontalAlignment(SwingConstants.CENTER);
         precioLabel.setForeground(new Color(231, 76, 60));
 
-        // Código (abajo, grande, en azul)
+        // Código
         JLabel codigoLabel = new JLabel(
                 "<html><center><font size='5'><b>" + producto.codigo + "</b></font></center></html>");
         codigoLabel.setFont(new Font("Arial", Font.BOLD, 24));
         codigoLabel.setHorizontalAlignment(SwingConstants.CENTER);
         codigoLabel.setForeground(new Color(41, 128, 185));
 
+        // Etiqueta de cantidad
+        JLabel cantidadLabel = new JLabel(
+                "<html><center>Cantidad: <b>" + cantidad + "</b></center></html>");
+        cantidadLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        cantidadLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        cantidadLabel.setForeground(new Color(39, 174, 96));
+
+        // Panel sur para código y cantidad
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.setOpaque(false);
+        southPanel.add(codigoLabel, BorderLayout.CENTER);
+        southPanel.add(cantidadLabel, BorderLayout.SOUTH);
+
         card.add(nombreLabel, BorderLayout.NORTH);
         card.add(precioLabel, BorderLayout.CENTER);
-        card.add(codigoLabel, BorderLayout.SOUTH);
+        card.add(southPanel, BorderLayout.SOUTH);
 
         return card;
     }
@@ -150,34 +179,6 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         buttonPanel.add(btnCerrar);
 
         return buttonPanel;
-    }
-
-    private JButton crearBotonEstilizado(String text, Color bgColor) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setBackground(bgColor);
-        button.setForeground(Color.WHITE);
-        button.setContentAreaFilled(false);
-        button.setOpaque(true);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(bgColor.darker(), 1),
-                BorderFactory.createEmptyBorder(8, 16, 8, 16)));
-        button.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
-                button.setBackground(bgColor.brighter());
-            }
-
-            @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
-                button.setBackground(bgColor);
-            }
-        });
-
-        return button;
     }
 
     private void exportarAPDF() {
@@ -212,8 +213,17 @@ public class PanelPrevisualizarTarjetas extends JDialog {
                 try {
                     generarPDF(finalFile);
                     SwingUtilities.invokeLater(() -> {
+                        // Calcular total de tarjetas generadas
+                        int totalGeneradas = 0;
+                        for (Integer cantidad : cantidades) {
+                            totalGeneradas += cantidad;
+                        }
+                        
                         JOptionPane.showMessageDialog(this,
-                                "PDF generado exitosamente en:\n" + finalFile.getAbsolutePath(),
+                                "PDF generado exitosamente:\n" +
+                                "• Productos únicos: " + productos.size() + "\n" +
+                                "• Tarjetas generadas: " + totalGeneradas + "\n" +
+                                "• Ubicación: " + finalFile.getAbsolutePath(),
                                 "PDF Generado", JOptionPane.INFORMATION_MESSAGE);
                     });
                 } catch (Exception e) {
@@ -229,7 +239,6 @@ public class PanelPrevisualizarTarjetas extends JDialog {
     }
 
     private void generarPDF(java.io.File file) throws Exception {
-
         com.itextpdf.text.Document document = null;
         java.io.FileOutputStream fos = null;
 
@@ -247,74 +256,82 @@ public class PanelPrevisualizarTarjetas extends JDialog {
             table.setSpacingAfter(5);
             table.setWidths(new float[] { 1f, 1f, 1f, 1f });
 
-            for (Producto producto : productos) {
+            // Generar tarjetas según la cantidad de cada producto
+            for (int i = 0; i < productos.size(); i++) {
+                Producto producto = productos.get(i);
+                int cantidad = cantidades.get(i);
+                
+                for (int j = 0; j < cantidad; j++) {
+                    com.itextpdf.text.pdf.PdfPCell cell = new com.itextpdf.text.pdf.PdfPCell();
+                    cell.setBorder(com.itextpdf.text.Rectangle.BOX);
+                    cell.setBorderWidth(0.4f);
 
-                com.itextpdf.text.pdf.PdfPCell cell = new com.itextpdf.text.pdf.PdfPCell();
-                cell.setBorder(com.itextpdf.text.Rectangle.BOX);
-                cell.setBorderWidth(0.4f);
+                    cell.setPaddingTop(6f);
+                    cell.setPaddingBottom(6f);
+                    cell.setPaddingLeft(5f);
+                    cell.setPaddingRight(5f);
 
-                cell.setPaddingTop(6f);
-                cell.setPaddingBottom(6f);
-                cell.setPaddingLeft(5f);
-                cell.setPaddingRight(5f);
+                    cell.setHorizontalAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                    cell.setVerticalAlignment(com.itextpdf.text.Element.ALIGN_MIDDLE);
+                    cell.setMinimumHeight(70f);
 
-                cell.setHorizontalAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-                cell.setVerticalAlignment(com.itextpdf.text.Element.ALIGN_MIDDLE);
+                    // Fuentes
+                    com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
+                            com.itextpdf.text.FontFactory.HELVETICA,
+                            6f,
+                            com.itextpdf.text.Font.NORMAL);
 
-                // Altura compacta
-                cell.setMinimumHeight(70f);
+                    com.itextpdf.text.Font precioFont = com.itextpdf.text.FontFactory.getFont(
+                            com.itextpdf.text.FontFactory.HELVETICA,
+                            6.5f,
+                            com.itextpdf.text.Font.NORMAL);
 
-                // ===== FUENTES (TODO NEGRO) =====
-                com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
-                        com.itextpdf.text.FontFactory.HELVETICA,
-                        6f,
-                        com.itextpdf.text.Font.NORMAL);
+                    com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
+                            com.itextpdf.text.FontFactory.HELVETICA_BOLD,
+                            13f,
+                            com.itextpdf.text.Font.BOLD);
 
-                com.itextpdf.text.Font precioFont = com.itextpdf.text.FontFactory.getFont(
-                        com.itextpdf.text.FontFactory.HELVETICA,
-                        6.5f,
-                        com.itextpdf.text.Font.NORMAL);
+                    com.itextpdf.text.Font codigoLabelFont = com.itextpdf.text.FontFactory.getFont(
+                            com.itextpdf.text.FontFactory.HELVETICA,
+                            4f,
+                            com.itextpdf.text.Font.NORMAL);
 
-                // Código más fuerte
-                com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
-                        com.itextpdf.text.FontFactory.HELVETICA_BOLD,
-                        13f,
-                        com.itextpdf.text.Font.BOLD);
+                    // Contenido
+                    com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(producto.nombre, nombreFont);
+                    nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                    nombre.setLeading(6f);
+                    nombre.setSpacingAfter(2f);
 
-                com.itextpdf.text.Font codigoLabelFont = com.itextpdf.text.FontFactory.getFont(
-                        com.itextpdf.text.FontFactory.HELVETICA,
-                        4f,
-                        com.itextpdf.text.Font.NORMAL);
+                    com.itextpdf.text.Paragraph precio = new com.itextpdf.text.Paragraph(producto.precio, precioFont);
+                    precio.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                    precio.setLeading(6f);
+                    precio.setSpacingAfter(8f);
 
-                // ===== CONTENIDO =====
-                com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(producto.nombre, nombreFont);
-                nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-                nombre.setLeading(6f);
-                nombre.setSpacingAfter(2f);
+                    com.itextpdf.text.Paragraph codigoParrafo = new com.itextpdf.text.Paragraph();
+                    codigoParrafo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                    codigoParrafo.setLeading(9f);
 
-                com.itextpdf.text.Paragraph precio = new com.itextpdf.text.Paragraph(producto.precio, precioFont);
-                precio.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-                precio.setLeading(6f);
-                precio.setSpacingAfter(8f); // 👈 separación ajustada
+                    com.itextpdf.text.Chunk label = new com.itextpdf.text.Chunk("COD: ", codigoLabelFont);
+                    com.itextpdf.text.Chunk codigo = new com.itextpdf.text.Chunk(producto.codigo, codigoFont);
 
-                com.itextpdf.text.Paragraph codigoParrafo = new com.itextpdf.text.Paragraph();
-                codigoParrafo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-                codigoParrafo.setLeading(9f);
+                    codigoParrafo.add(label);
+                    codigoParrafo.add(codigo);
 
-                com.itextpdf.text.Chunk label = new com.itextpdf.text.Chunk("COD: ", codigoLabelFont);
-                com.itextpdf.text.Chunk codigo = new com.itextpdf.text.Chunk(producto.codigo, codigoFont);
+                    cell.addElement(nombre);
+                    cell.addElement(precio);
+                    cell.addElement(codigoParrafo);
 
-                codigoParrafo.add(label);
-                codigoParrafo.add(codigo);
-
-                cell.addElement(nombre);
-                cell.addElement(precio);
-                cell.addElement(codigoParrafo);
-
-                table.addCell(cell);
+                    table.addCell(cell);
+                }
             }
 
-            int resto = productos.size() % numColumnas;
+            // Rellenar fila final si es necesario
+            int totalCeldas = 0;
+            for (Integer cantidad : cantidades) {
+                totalCeldas += cantidad;
+            }
+            
+            int resto = totalCeldas % numColumnas;
             if (resto != 0) {
                 for (int i = resto; i < numColumnas; i++) {
                     com.itextpdf.text.pdf.PdfPCell empty = new com.itextpdf.text.pdf.PdfPCell();
@@ -334,4 +351,31 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         }
     }
 
+    private JButton crearBotonEstilizado(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(bgColor.darker(), 1),
+                BorderFactory.createEmptyBorder(8, 16, 8, 16)));
+        button.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(bgColor.brighter());
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(bgColor);
+            }
+        });
+
+        return button;
+    }
 }
