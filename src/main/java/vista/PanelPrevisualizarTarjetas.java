@@ -7,7 +7,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -23,17 +22,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.FontFactory;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
 
 import model.Producto;
 
@@ -240,83 +228,110 @@ public class PanelPrevisualizarTarjetas extends JDialog {
         }
     }
 
-    private void generarPDF(File file) throws Exception {
-        Document document = new Document(PageSize.A4);
-        FileOutputStream fos = new FileOutputStream(file);
-        PdfWriter.getInstance(document, fos);
-        document.open();
+    private void generarPDF(java.io.File file) throws Exception {
 
-        int numColumnas = 5;
-        PdfPTable table = new PdfPTable(numColumnas);
-        table.setWidthPercentage(100);
-        table.setSpacingBefore(5);
-        table.setSpacingAfter(5);
+        com.itextpdf.text.Document document = null;
+        java.io.FileOutputStream fos = null;
 
-        float[] columnWidths = new float[numColumnas];
-        for (int i = 0; i < numColumnas; i++) {
-            columnWidths[i] = 1f;
+        try {
+            document = new com.itextpdf.text.Document(
+                    com.itextpdf.text.PageSize.A4, 12, 12, 12, 12);
+            fos = new java.io.FileOutputStream(file);
+            com.itextpdf.text.pdf.PdfWriter.getInstance(document, fos);
+            document.open();
+
+            int numColumnas = 4;
+            com.itextpdf.text.pdf.PdfPTable table = new com.itextpdf.text.pdf.PdfPTable(numColumnas);
+            table.setWidthPercentage(100);
+            table.setSpacingBefore(5);
+            table.setSpacingAfter(5);
+            table.setWidths(new float[] { 1f, 1f, 1f, 1f });
+
+            for (Producto producto : productos) {
+
+                com.itextpdf.text.pdf.PdfPCell cell = new com.itextpdf.text.pdf.PdfPCell();
+                cell.setBorder(com.itextpdf.text.Rectangle.BOX);
+                cell.setBorderWidth(0.4f);
+
+                cell.setPaddingTop(6f);
+                cell.setPaddingBottom(6f);
+                cell.setPaddingLeft(5f);
+                cell.setPaddingRight(5f);
+
+                cell.setHorizontalAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                cell.setVerticalAlignment(com.itextpdf.text.Element.ALIGN_MIDDLE);
+
+                // Altura compacta
+                cell.setMinimumHeight(70f);
+
+                // ===== FUENTES (TODO NEGRO) =====
+                com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
+                        com.itextpdf.text.FontFactory.HELVETICA,
+                        6f,
+                        com.itextpdf.text.Font.NORMAL);
+
+                com.itextpdf.text.Font precioFont = com.itextpdf.text.FontFactory.getFont(
+                        com.itextpdf.text.FontFactory.HELVETICA,
+                        6.5f,
+                        com.itextpdf.text.Font.NORMAL);
+
+                // Código más fuerte
+                com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
+                        com.itextpdf.text.FontFactory.HELVETICA_BOLD,
+                        13f,
+                        com.itextpdf.text.Font.BOLD);
+
+                com.itextpdf.text.Font codigoLabelFont = com.itextpdf.text.FontFactory.getFont(
+                        com.itextpdf.text.FontFactory.HELVETICA,
+                        4f,
+                        com.itextpdf.text.Font.NORMAL);
+
+                // ===== CONTENIDO =====
+                com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(producto.nombre, nombreFont);
+                nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                nombre.setLeading(6f);
+                nombre.setSpacingAfter(2f);
+
+                com.itextpdf.text.Paragraph precio = new com.itextpdf.text.Paragraph(producto.precio, precioFont);
+                precio.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                precio.setLeading(6f);
+                precio.setSpacingAfter(8f); // 👈 separación ajustada
+
+                com.itextpdf.text.Paragraph codigoParrafo = new com.itextpdf.text.Paragraph();
+                codigoParrafo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                codigoParrafo.setLeading(9f);
+
+                com.itextpdf.text.Chunk label = new com.itextpdf.text.Chunk("COD: ", codigoLabelFont);
+                com.itextpdf.text.Chunk codigo = new com.itextpdf.text.Chunk(producto.codigo, codigoFont);
+
+                codigoParrafo.add(label);
+                codigoParrafo.add(codigo);
+
+                cell.addElement(nombre);
+                cell.addElement(precio);
+                cell.addElement(codigoParrafo);
+
+                table.addCell(cell);
+            }
+
+            int resto = productos.size() % numColumnas;
+            if (resto != 0) {
+                for (int i = resto; i < numColumnas; i++) {
+                    com.itextpdf.text.pdf.PdfPCell empty = new com.itextpdf.text.pdf.PdfPCell();
+                    empty.setBorder(com.itextpdf.text.Rectangle.NO_BORDER);
+                    empty.setMinimumHeight(70f);
+                    table.addCell(empty);
+                }
+            }
+
+            document.add(table);
+
+        } finally {
+            if (document != null && document.isOpen())
+                document.close();
+            if (fos != null)
+                fos.close();
         }
-        table.setWidths(columnWidths);
-
-        for (Producto producto : productos) {
-            PdfPCell cell = new PdfPCell();
-            cell.setBorder(Rectangle.BOX);
-            cell.setBorderWidth(0.25f);
-
-            // Paddings un poco más amplios
-            cell.setPaddingTop(8f);
-            cell.setPaddingBottom(8f);
-            cell.setPaddingLeft(3f);
-            cell.setPaddingRight(3f);
-
-            cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-            // Fuentes
-            com.itextpdf.text.Font nombreFont = FontFactory.getFont(FontFactory.HELVETICA, 4f);
-            com.itextpdf.text.Font precioFont = FontFactory.getFont(FontFactory.HELVETICA, 4f);
-            com.itextpdf.text.Font codigoFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8f);
-            com.itextpdf.text.Font codigoLabelFont = FontFactory.getFont(FontFactory.HELVETICA, 2f);
-
-            // Nombre
-            Paragraph nombre = new Paragraph(producto.nombre, nombreFont);
-            nombre.setAlignment(Element.ALIGN_CENTER);
-            nombre.setSpacingAfter(4f); // MÁS separación con el precio
-            nombre.setLeading(6f); // Altura mínima de línea aumentada
-
-            // Precio
-            Paragraph precio = new Paragraph(producto.precio, precioFont);
-            precio.setAlignment(Element.ALIGN_CENTER);
-            precio.setSpacingAfter(4f); // MÁS separación con el código
-            precio.setLeading(6f);
-
-            // Código
-            Paragraph codigoParrafo = new Paragraph();
-            codigoParrafo.setAlignment(Element.ALIGN_CENTER);
-            codigoParrafo.setLeading(6f);
-            codigoParrafo.setSpacingBefore(2f); // Un poquito más de espacio antes
-
-            Chunk codigoLabel = new Chunk("COD: ", codigoLabelFont);
-            codigoLabel.setHorizontalScaling(0.8f);
-
-            Chunk codigo = new Chunk(producto.codigo, codigoFont);
-
-            codigoParrafo.add(codigoLabel);
-            codigoParrafo.add(codigo);
-
-            // Agregar todo a la celda
-            cell.addElement(nombre);
-            cell.addElement(precio);
-            cell.addElement(codigoParrafo);
-
-            // Altura mínima un poco mayor para más aire
-            cell.setMinimumHeight(50f);
-
-            table.addCell(cell);
-        }
-
-        document.add(table);
-        document.close();
-        fos.close();
     }
+
 }
