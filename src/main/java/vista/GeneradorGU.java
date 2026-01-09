@@ -61,9 +61,10 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import com.google.zxing.BarcodeFormat;
 import com.itextpdf.text.Document;
-import com.itextpdf.text.Element;
+import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
@@ -76,8 +77,7 @@ import service.GeneradorService;
 public class GeneradorGU extends JFrame {
 
     // Paleta de colores moderna
-    public static final Color COLOR_FONDO = new Color(245, 247, 250); // ejemplo
-
+    public static final Color COLOR_FONDO = new Color(245, 247, 250);
     public static final Color COLOR_PRIMARIO = new Color(41, 128, 185);
     public static final Color COLOR_SECUNDARIO = new Color(52, 152, 219);
     public static final Color COLOR_ACENTO = new Color(231, 76, 60);
@@ -98,14 +98,13 @@ public class GeneradorGU extends JFrame {
     private JButton btnVerLista;
     private JButton btnImportarExcel;
     private JButton btnImportarCodigo;
-    private JButton btnImportarTexto;
-    private JTextField txtPrecio; // Agregar esta variable
-    private JLabel lblPrecioPreview; // Agregar esta variable
+    private JTextField txtPrecio;
+    private JLabel lblPrecioPreview;
 
     private List<Producto> listaProductos = new ArrayList<>();
 
     // Configuración de impresión para impresora térmica
-    private static final float PAPEL_ANCHO_MM = 72f; // Área imprimible de 72mm
+    private static final float PAPEL_ANCHO_MM = 72f;
     private static final float MARGEN_IZQ_MM = 4f;
     private static final float MARGEN_DER_MM = 4f;
     private static final float MARGEN_SUP_MM = 5f;
@@ -152,14 +151,12 @@ public class GeneradorGU extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // Fondo con gradiente
                 GradientPaint gradient = new GradientPaint(
                         0, 0, COLOR_PRIMARIO,
                         getWidth(), 0, COLOR_SECUNDARIO);
                 g2d.setPaint(gradient);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
 
-                // Borde sutil
                 g2d.setColor(new Color(255, 255, 255, 100));
                 g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 15, 15);
             }
@@ -168,13 +165,11 @@ public class GeneradorGU extends JFrame {
         headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
         headerPanel.setOpaque(false);
 
-        // Título con sombra
         JLabel lblTitulo = new JLabel("Generador de Códigos de Barras", SwingConstants.CENTER);
         lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
         lblTitulo.setForeground(Color.WHITE);
         lblTitulo.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
 
-        // Subtítulo
         JLabel lblSubtitulo = new JLabel("UTILMARQUET S.A.C", SwingConstants.CENTER);
         lblSubtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblSubtitulo.setForeground(new Color(240, 240, 240));
@@ -187,21 +182,18 @@ public class GeneradorGU extends JFrame {
         JPanel contentPanel = new JPanel(new BorderLayout(15, 15));
         contentPanel.setOpaque(false);
 
-        // Panel de controles con borde redondeado
         JPanel panelControles = crearPanelControles();
         contentPanel.add(panelControles, BorderLayout.NORTH);
 
-        // Panel de visualización con borde redondeado
         JPanel panelVisualizacion = crearPanelVisualizacion();
         contentPanel.add(panelVisualizacion, BorderLayout.CENTER);
 
-        // Panel de botones
         JPanel panelBotones = crearPanelBotones();
         contentPanel.add(panelBotones, BorderLayout.SOUTH);
 
         mainPanel.add(contentPanel, BorderLayout.CENTER);
 
-        // Barra de estado en la parte inferior
+        // Barra de estado
         JPanel statusPanel = new JPanel(new BorderLayout());
         statusPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, COLOR_BORDE));
         statusPanel.setBackground(COLOR_CARD);
@@ -219,10 +211,7 @@ public class GeneradorGU extends JFrame {
         statusPanel.add(progressBar, BorderLayout.EAST);
         mainPanel.add(statusPanel, BorderLayout.SOUTH);
 
-        // Hacer la ventana redimensionable
         setResizable(true);
-
-        // Centrar ventana después de empaquetar
         setLocationRelativeTo(null);
         setVisible(true);
     }
@@ -233,7 +222,6 @@ public class GeneradorGU extends JFrame {
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Título de sección
         JLabel lblSeccion = new JLabel("Configuración del Código");
         lblSeccion.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblSeccion.setForeground(COLOR_TEXTO);
@@ -247,7 +235,6 @@ public class GeneradorGU extends JFrame {
         gbc.insets = new Insets(0, 0, 10, 0);
         panel.add(lblSeccion, gbc);
 
-        // Configuración de GridBagConstraints
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -288,7 +275,7 @@ public class GeneradorGU extends JFrame {
         btnGenerarCodigo.setBackground(COLOR_ACENTO);
         panel.add(btnGenerarCodigo, gbc);
 
-        // Campo de precio (NUEVO)
+        // Campo de precio
         gbc.gridy = 3;
         gbc.gridx = 0;
         panel.add(new JLabel("Precio (S/):"), gbc);
@@ -300,11 +287,10 @@ public class GeneradorGU extends JFrame {
         txtPrecio.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COLOR_BORDE),
                 BorderFactory.createEmptyBorder(8, 10, 8, 10)));
-        // Placeholder para indicar el formato
         txtPrecio.setToolTipText("Ejemplo: 25.50");
         panel.add(txtPrecio, gbc);
 
-        // Combo formato (se mueve a la siguiente fila)
+        // Combo formato
         gbc.gridy = 4;
         gbc.gridx = 0;
         panel.add(new JLabel("Formato:"), gbc);
@@ -324,21 +310,23 @@ public class GeneradorGU extends JFrame {
         });
         panel.add(cmbFormato, gbc);
 
-        // Botón de ayuda (se mueve a la siguiente fila)
+        // Botón de ayuda
         gbc.gridx = 2;
         gbc.weightx = 0.0;
         JButton btnAyuda = crearBoton("Ayuda", e -> mostrarAyuda());
         btnAyuda.setBackground(new Color(149, 165, 166));
         panel.add(btnAyuda, gbc);
-        // Botón para guardar producto (se mueve a la siguiente fila)
+
+        // Botón guardar producto
         gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 3;
         gbc.weightx = 1.0;
         btnGuardarProducto = crearBoton("Guardar Producto", e -> guardarProducto());
-        btnGuardarProducto.setBackground(new Color(46, 204, 113)); // Verde
+        btnGuardarProducto.setBackground(new Color(46, 204, 113));
         btnGuardarProducto.setEnabled(false);
         panel.add(btnGuardarProducto, gbc);
+
         return panel;
     }
 
@@ -349,38 +337,31 @@ public class GeneradorGU extends JFrame {
                 new RoundedBorder(15, COLOR_BORDE),
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)));
 
-        // Título de sección
         JLabel lblSeccion = new JLabel("Vista Previa del Código");
         lblSeccion.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblSeccion.setForeground(COLOR_TEXTO);
         lblSeccion.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         panel.add(lblSeccion, BorderLayout.NORTH);
 
-        // Panel para imagen con desplazamiento
         JScrollPane scrollPane = new JScrollPane();
         scrollPane.setBorder(null);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
 
-        // Panel para imagen
         JPanel panelImagen = new JPanel(new BorderLayout());
         panelImagen.setBackground(Color.WHITE);
         panelImagen.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 230, 230)),
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)));
 
-        // Etiqueta para nombre del producto
         lblNombrePreview = new JLabel(" ", JLabel.CENTER);
         lblNombrePreview.setFont(new Font("Arial", Font.BOLD, 18));
         lblNombrePreview.setForeground(COLOR_PRIMARIO);
         lblNombrePreview.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         panelImagen.add(lblNombrePreview, BorderLayout.NORTH);
 
-        // Etiqueta para imagen
         lblImagen = new JLabel("", SwingConstants.CENTER);
         lblImagen.setVerticalAlignment(SwingConstants.CENTER);
-
-        // Mensaje inicial integrado en la misma etiqueta
         lblImagen.setText("<html><div style='text-align: center;'>"
                 + "<b>¡Bienvenido al Generador de Códigos de Barras!</b><br><br>"
                 + "Para comenzar, ingresa un código o genera uno nuevo<br>"
@@ -389,18 +370,15 @@ public class GeneradorGU extends JFrame {
         lblImagen.setVerticalTextPosition(JLabel.CENTER);
         panelImagen.add(lblImagen, BorderLayout.CENTER);
 
-        // Panel sur para precio y código
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.setOpaque(false);
 
-        // Label para mostrar el precio (NUEVO)
         lblPrecioPreview = new JLabel(" ", JLabel.CENTER);
         lblPrecioPreview.setFont(new Font("Arial", Font.BOLD, 20));
-        lblPrecioPreview.setForeground(new Color(231, 76, 60)); // Color rojo llamativo
+        lblPrecioPreview.setForeground(new Color(231, 76, 60));
         lblPrecioPreview.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
         southPanel.add(lblPrecioPreview, BorderLayout.NORTH);
 
-        // Label para mostrar el número del código
         lblNumeroCodigo = new JLabel(" ", JLabel.CENTER);
         lblNumeroCodigo.setFont(new Font("Arial", Font.BOLD, 18));
         lblNumeroCodigo.setForeground(COLOR_TEXTO);
@@ -408,7 +386,6 @@ public class GeneradorGU extends JFrame {
         southPanel.add(lblNumeroCodigo, BorderLayout.SOUTH);
 
         panelImagen.add(southPanel, BorderLayout.SOUTH);
-
         scrollPane.setViewportView(panelImagen);
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -420,35 +397,26 @@ public class GeneradorGU extends JFrame {
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
 
-        // Botón para importar Excel
         btnImportarExcel = crearBoton("Importar Excel", e -> abrirPanelImportarExcel());
-        btnImportarExcel.setBackground(new Color(241, 196, 15)); // Amarillo
+        btnImportarExcel.setBackground(new Color(241, 196, 15));
         panel.add(btnImportarExcel);
 
         btnImportarCodigo = crearBoton("Importar Codigo", e -> abrirPanelImportarCodigo());
         btnImportarCodigo.setBackground(new Color(241, 196, 15));
         panel.add(btnImportarCodigo);
 
-        btnImportarTexto = crearBoton("Importar Codigo Texto", e -> PanelImportarTexto());
-        btnImportarTexto.setBackground(new Color(241, 196, 15));
-        panel.add(btnImportarTexto);
-
-        // Botón generar imagen
         JButton btnGenerarImagen = crearBoton("Generar Imagen", e -> generarImagen());
         btnGenerarImagen.setBackground(COLOR_PRIMARIO);
         panel.add(btnGenerarImagen);
 
-        // Botón para guardar la imagen
         JButton btnGuardar = crearBoton("Descargar Imagen", e -> guardarImagen());
         btnGuardar.setBackground(COLOR_SECUNDARIO);
         panel.add(btnGuardar);
 
-        // Botón para ver lista de productos
         btnVerLista = crearBoton("Ver Lista (" + listaProductos.size() + ")", e -> mostrarListaProductos());
-        btnVerLista.setBackground(new Color(155, 89, 182)); // Morado
+        btnVerLista.setBackground(new Color(155, 89, 182));
         panel.add(btnVerLista);
 
-        // Botón para salir
         JButton btnSalir = crearBoton("Salir", e -> System.exit(0));
         btnSalir.setBackground(new Color(149, 165, 166));
         panel.add(btnSalir);
@@ -486,7 +454,6 @@ public class GeneradorGU extends JFrame {
         boton.setOpaque(false);
         boton.setPreferredSize(new Dimension(170, 45));
 
-        // Sombra de texto para mejorar visibilidad
         boton.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
             @Override
             public void paint(Graphics g, JComponent c) {
@@ -499,11 +466,9 @@ public class GeneradorGU extends JFrame {
                 int x = (b.getWidth() - fm.stringWidth(text)) / 2;
                 int y = (b.getHeight() + fm.getAscent()) / 2 - 3;
 
-                // Sombra
                 g2.setColor(new Color(0, 0, 0, 80));
                 g2.drawString(text, x + 1, y + 1);
 
-                // Texto principal
                 g2.setColor(b.getForeground());
                 g2.drawString(text, x, y);
                 g2.dispose();
@@ -512,7 +477,6 @@ public class GeneradorGU extends JFrame {
 
         boton.addActionListener(action);
 
-        // Efecto cursor hover
         boton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -531,14 +495,9 @@ public class GeneradorGU extends JFrame {
     private void abrirPanelImportarExcel() {
         new PanelImportarExcel(this).setVisible(true);
     }
-    // Nuevos métodos
 
     private void abrirPanelImportarCodigo() {
         new PanelImportarCodigo(this).setVisible(true);
-    }
-
-    private void PanelImportarTexto() {
-        new PanelImportarTexto(this).setVisible(true);
     }
 
     private void mostrarAyuda() {
@@ -581,7 +540,7 @@ public class GeneradorGU extends JFrame {
         try {
             String nombre = txtNombreProducto.getText();
             String codigo = txtCodigo.getText();
-            String precio = txtPrecio.getText().trim(); // Obtener precio
+            String precio = txtPrecio.getText().trim();
 
             if (nombre.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
@@ -611,12 +570,10 @@ public class GeneradorGU extends JFrame {
                     formato = BarcodeFormat.CODE_128;
             }
 
-            // Simular progreso
             progressBar.setVisible(true);
             progressBar.setIndeterminate(true);
             progressBar.setString("Generando imagen...");
 
-            // Usar un hilo separado para la generación
             new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() throws Exception {
@@ -634,24 +591,18 @@ public class GeneradorGU extends JFrame {
                 protected void done() {
                     try {
                         get();
-                        // Mostrar el nombre del producto
                         lblNombrePreview.setText(nombre);
 
-                        // Mostrar el precio formateado (NUEVO)
                         if (!precio.isEmpty()) {
                             lblPrecioPreview.setText("S/ " + precio);
                         } else {
                             lblPrecioPreview.setText("");
                         }
 
-                        // Mostrar la imagen en el JLabel
                         lblImagen.setIcon(new ImageIcon(imagenCodigo));
-                        // Limpiar el mensaje inicial
                         lblImagen.setText("");
-                        // Mostrar el número debajo del código
                         lblNumeroCodigo.setText(codigo);
 
-                        // Habilitar botón de guardar producto
                         btnGuardarProducto.setEnabled(true);
                     } catch (Exception e) {
                         JOptionPane.showMessageDialog(GeneradorGU.this,
@@ -683,7 +634,7 @@ public class GeneradorGU extends JFrame {
     private void guardarProducto() {
         String nombre = txtNombreProducto.getText().trim();
         String codigo = txtCodigo.getText().trim();
-        String precio = txtPrecio.getText().trim(); // Obtener el precio
+        String precio = txtPrecio.getText().trim();
 
         if (nombre.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor ingrese un nombre para el producto", "Error",
@@ -709,28 +660,24 @@ public class GeneradorGU extends JFrame {
                 formato = BarcodeFormat.CODE_128;
         }
 
-        // Formatear el precio para mostrar S/
         String precioFormateado = precio.isEmpty() ? "" : "S/ " + precio;
 
-        // Agregar producto a la lista con el precio
-        Producto nuevoProducto = new Producto(nombre, codigo, imagenCodigo, formato, precioFormateado);
+        // CORRECCIÓN: Usar el constructor correcto con 6 parámetros
+        Producto nuevoProducto = new Producto(nombre, codigo, "", imagenCodigo, formato, precioFormateado);
         listaProductos.add(nuevoProducto);
 
-        // Actualizar contador en botón de lista
         btnVerLista.setText("Ver Lista (" + listaProductos.size() + ")");
 
-        // Mostrar mensaje de éxito
         JOptionPane.showMessageDialog(this,
                 "<html><div style='text-align:center;'>Producto guardado exitosamente!<br>Total: "
                         + listaProductos.size() + "</div></html>",
                 "Producto Guardado", JOptionPane.INFORMATION_MESSAGE);
 
-        // Limpiar campos para el siguiente producto
         txtNombreProducto.setText("");
         txtCodigo.setText("");
-        txtPrecio.setText(""); // Limpiar campo de precio
+        txtPrecio.setText("");
         lblNombrePreview.setText("");
-        lblPrecioPreview.setText(""); // Limpiar preview de precio
+        lblPrecioPreview.setText("");
         lblImagen.setIcon(null);
         lblImagen.setText(
                 "<html><div style='text-align: center;'>Producto guardado!<br>Ingrese un nuevo producto</div></html>");
@@ -746,13 +693,11 @@ public class GeneradorGU extends JFrame {
             return;
         }
 
-        // Crear un diálogo modal
         JDialog dialog = new JDialog(this, "Productos Guardados", true);
         dialog.setSize(800, 600);
         dialog.setLayout(new BorderLayout());
         dialog.setLocationRelativeTo(this);
 
-        // Panel de título
         JPanel headerPanel = new JPanel();
         headerPanel.setBackground(COLOR_PRIMARIO);
         JLabel titleLabel = new JLabel("Productos Guardados (" + listaProductos.size() + ")", JLabel.CENTER);
@@ -761,9 +706,8 @@ public class GeneradorGU extends JFrame {
         headerPanel.add(titleLabel);
         dialog.add(headerPanel, BorderLayout.NORTH);
 
-        // Método para renderizar productos
         Runnable renderProductos = () -> {
-            JPanel contentPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 columnas
+            JPanel contentPanel = new JPanel(new GridLayout(0, 2, 10, 10));
             contentPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             contentPanel.setBackground(COLOR_FONDO);
 
@@ -774,7 +718,6 @@ public class GeneradorGU extends JFrame {
                         BorderFactory.createLineBorder(COLOR_BORDE),
                         BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
-                // Panel superior con nombre y precio
                 JPanel topPanel = new JPanel(new BorderLayout());
                 topPanel.setOpaque(false);
 
@@ -782,22 +725,19 @@ public class GeneradorGU extends JFrame {
                 nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
                 nameLabel.setForeground(COLOR_TEXTO);
 
-                // Mostrar precio si existe (NUEVO)
                 if (producto.precio != null && !producto.precio.isEmpty()) {
                     JLabel priceLabel = new JLabel(producto.precio, JLabel.RIGHT);
                     priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-                    priceLabel.setForeground(new Color(231, 76, 60)); // Rojo llamativo
+                    priceLabel.setForeground(new Color(231, 76, 60));
                     topPanel.add(priceLabel, BorderLayout.EAST);
                 }
 
                 topPanel.add(nameLabel, BorderLayout.CENTER);
                 card.add(topPanel, BorderLayout.NORTH);
 
-                // Imagen
                 JLabel imageLabel = new JLabel(new ImageIcon(producto.imagen), JLabel.CENTER);
                 card.add(imageLabel, BorderLayout.CENTER);
 
-                // Panel inferior con código y botón eliminar
                 JPanel bottomPanel = new JPanel(new BorderLayout());
                 bottomPanel.setOpaque(false);
 
@@ -816,8 +756,8 @@ public class GeneradorGU extends JFrame {
                             JOptionPane.YES_NO_OPTION);
                     if (confirm == JOptionPane.YES_OPTION) {
                         listaProductos.remove(producto);
-                        dialog.dispose(); // cerrar para volver a generar
-                        mostrarListaProductos(); // recargar
+                        dialog.dispose();
+                        mostrarListaProductos();
                     }
                 });
 
@@ -832,36 +772,31 @@ public class GeneradorGU extends JFrame {
             dialog.add(scrollPane, BorderLayout.CENTER);
         };
 
-        // Cargar productos la primera vez
         renderProductos.run();
 
-        // Panel de botones inferiores
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         buttonPanel.setBackground(COLOR_FONDO);
 
-        // Botón imprimir
         JButton btnImprimir = new JButton("🖨 Imprimir Todos");
         btnImprimir.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnImprimir.setBackground(new Color(40, 180, 99)); // Verde brillante
+        btnImprimir.setBackground(new Color(40, 180, 99));
         btnImprimir.setFocusPainted(false);
         btnImprimir.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         buttonPanel.add(btnImprimir);
         btnImprimir.addActionListener(e -> imprimirProductos());
 
-        // Botón exportar PDF
         JButton btnExportarPDF = new JButton("📄 Exportar a PDF");
         btnExportarPDF.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnExportarPDF.setBackground(new Color(52, 152, 219)); // Azul cielo
+        btnExportarPDF.setBackground(new Color(52, 152, 219));
         btnExportarPDF.setFocusPainted(false);
         btnExportarPDF.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         buttonPanel.add(btnExportarPDF);
         btnExportarPDF.addActionListener(e -> exportarAPDF());
 
-        // Botón eliminar todos
         JButton btnEliminarTodos = new JButton("🗑 Eliminar Todos");
         btnEliminarTodos.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnEliminarTodos.setBackground(new Color(192, 57, 43)); // Rojo más fuerte
+        btnEliminarTodos.setBackground(new Color(192, 57, 43));
         btnEliminarTodos.setFocusPainted(false);
         btnEliminarTodos.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         buttonPanel.add(btnEliminarTodos);
@@ -872,14 +807,13 @@ public class GeneradorGU extends JFrame {
             if (confirm == JOptionPane.YES_OPTION) {
                 listaProductos.clear();
                 dialog.dispose();
-                mostrarListaProductos(); // recargar vacío
+                mostrarListaProductos();
             }
         });
 
-        // Botón cerrar
         JButton btnCerrar = new JButton("✖ Cerrar");
         btnCerrar.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnCerrar.setBackground(new Color(231, 76, 60)); // Rojo claro
+        btnCerrar.setBackground(new Color(231, 76, 60));
         btnCerrar.setFocusPainted(false);
         btnCerrar.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         buttonPanel.add(btnCerrar);
@@ -896,12 +830,11 @@ public class GeneradorGU extends JFrame {
 
         PrinterJob job = PrinterJob.getPrinterJob();
 
-        // Configurar página A4
         PageFormat pageFormat = job.defaultPage();
         Paper paper = new Paper();
-        double paperWidth = 210; // Ancho A4 en mm
-        double paperHeight = 297; // Alto A4 en mm
-        double margin = 10; // Márgenes de 10mm
+        double paperWidth = 210;
+        double paperHeight = 297;
+        double margin = 10;
 
         paper.setSize(paperWidth * 72 / 25.4, paperHeight * 72 / 25.4);
         paper.setImageableArea(
@@ -919,7 +852,6 @@ public class GeneradorGU extends JFrame {
                 double usableWidth = pageFormat.getImageableWidth();
                 double usableHeight = pageFormat.getImageableHeight();
 
-                // Configurar 4 columnas y 8 filas (32 códigos por página)
                 int cols = 4;
                 int rows = 8;
                 int itemsPerPage = cols * rows;
@@ -932,7 +864,6 @@ public class GeneradorGU extends JFrame {
                 double cellWidth = usableWidth / cols;
                 double cellHeight = usableHeight / rows;
 
-                // Reducir tamaño para dejar espacio entre códigos
                 double padding = 5;
                 double contentWidth = cellWidth - 2 * padding;
                 double contentHeight = cellHeight - 2 * padding;
@@ -946,16 +877,13 @@ public class GeneradorGU extends JFrame {
 
                         Producto producto = listaProductos.get(currentIndex);
 
-                        // Calcular posición
                         double x = col * cellWidth + padding;
                         double y = row * cellHeight + padding;
 
-                        // Dibujar código de barras reducido
                         BufferedImage img = resizeImage(producto.imagen, (int) contentWidth,
                                 (int) (contentHeight * 0.7));
                         g2d.drawImage(img, (int) x, (int) y, null);
 
-                        // Dibujar texto reducido
                         g2d.setFont(new Font("Arial", Font.PLAIN, 6));
                         String text = producto.codigo;
                         int textWidth = g2d.getFontMetrics().stringWidth(text);
@@ -980,7 +908,6 @@ public class GeneradorGU extends JFrame {
         }
     }
 
-    // Método auxiliar para redimensionar imágenes
     private BufferedImage resizeImage(BufferedImage original, int width, int height) {
         BufferedImage resized = new BufferedImage(width, height, original.getType());
         Graphics2D g = resized.createGraphics();
@@ -991,6 +918,7 @@ public class GeneradorGU extends JFrame {
     }
 
     private void exportarAPDF() {
+
         if (listaProductos.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "No hay productos para exportar",
@@ -998,7 +926,6 @@ public class GeneradorGU extends JFrame {
             return;
         }
 
-        // Filtrar productos con imágenes válidas
         List<Producto> productosValidos = listaProductos.stream()
                 .filter(p -> p.imagen != null)
                 .toList();
@@ -1013,158 +940,187 @@ public class GeneradorGU extends JFrame {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Guardar PDF");
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        String fileName = "codigos_barras_" + sdf.format(new Date()) + ".pdf";
-        fileChooser.setSelectedFile(new File(fileName));
+        fileChooser.setSelectedFile(
+                new File("codigos_barras_" + sdf.format(new Date()) + ".pdf"));
 
-        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(".pdf")) {
-                file = new File(file.getAbsolutePath() + ".pdf");
-            }
+        if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
 
-            File finalFile = file;
+        File file = fileChooser.getSelectedFile();
+        if (!file.getName().toLowerCase().endsWith(".pdf")) {
+            file = new File(file.getAbsolutePath() + ".pdf");
+        }
 
-            progressBar.setVisible(true);
-            progressBar.setIndeterminate(true);
-            progressBar.setString("Generando PDF...");
+        File finalFile = file;
 
-            new SwingWorker<Void, Void>() {
-                @Override
-                protected Void doInBackground() {
-                    Document document = null;
-                    FileOutputStream fos = null;
-                    try {
-                        document = new Document(PageSize.A4);
-                        fos = new FileOutputStream(finalFile);
-                        PdfWriter writer = PdfWriter.getInstance(document, fos);
-                        document.open();
+        progressBar.setVisible(true);
+        progressBar.setIndeterminate(true);
+        progressBar.setString("Generando PDF...");
 
-                        int numColumnas = Math.min(4, Math.max(1, productosValidos.size()));
-                        PdfPTable table = new PdfPTable(numColumnas);
-                        table.setWidthPercentage(100);
-                        table.setSpacingBefore(10);
-                        table.setSpacingAfter(10);
+        new SwingWorker<Void, Void>() {
 
-                        // Mantener altura fija para consistencia
-                        float padding = 5;
-                        float cellHeight = 55; // Altura consistente
+            @Override
+            protected Void doInBackground() {
 
-                        for (Producto producto : productosValidos) {
-                            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                                PdfPCell cell = new PdfPCell();
-                                cell.setBorder(Rectangle.BOX);
-                                cell.setBorderWidth(0.5f);
-                                cell.setPadding(padding);
-                                cell.setFixedHeight(cellHeight);
+                Document document = null;
+                FileOutputStream fos = null;
 
-                                ImageIO.write(producto.imagen, "PNG", baos);
-                                byte[] imageBytes = baos.toByteArray();
+                try {
+                    document = new Document(PageSize.A4);
+                    fos = new FileOutputStream(finalFile);
+                    PdfWriter.getInstance(document, fos);
+                    document.open();
 
-                                Image img = Image.getInstance(imageBytes);
-                                img.scaleToFit(50, 20); // Tamaño fijo de imagen
-                                img.setAlignment(Element.ALIGN_CENTER);
+                    int numColumnas = 4;
+                    PdfPTable table = new PdfPTable(numColumnas);
+                    table.setWidthPercentage(100);
+                    table.setSpacingBefore(10);
+                    table.setSpacingAfter(10);
+                    table.setWidths(new float[] { 1f, 1f, 1f, 1f });
 
-                                // Fuente para el nombre - tamaño reducido para que quepa todo
-                                com.itextpdf.text.Font nombreFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 5f, com.itextpdf.text.Font.NORMAL);
-                                String nombreReducido = resumirTexto(producto.nombre, 2); // Reducir a 2 palabras
-                                com.itextpdf.text.Paragraph nombre = new com.itextpdf.text.Paragraph(nombreReducido,
-                                        nombreFont);
-                                nombre.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
+                    // 🔹 ALTURA UN POCO MÁS BAJA
+                    float cellHeight = 54f;
 
-                                // PRECIO - en negrita negra
-                                com.itextpdf.text.Paragraph precioParrafo = null;
-                                if (producto.precio != null && !producto.precio.isEmpty()) {
-                                    com.itextpdf.text.Font precioFont = com.itextpdf.text.FontFactory.getFont(
-                                            com.itextpdf.text.FontFactory.HELVETICA_BOLD, 6f,
-                                            com.itextpdf.text.Font.NORMAL);
-                                    precioParrafo = new com.itextpdf.text.Paragraph(producto.precio, precioFont);
-                                    precioParrafo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-                                }
+                    for (Producto producto : productosValidos) {
 
-                                // Fuente para el código - tamaño consistente
-                                com.itextpdf.text.Font codigoFont = com.itextpdf.text.FontFactory.getFont(
-                                        com.itextpdf.text.FontFactory.HELVETICA, 5f);
-                                com.itextpdf.text.Paragraph codigo = new com.itextpdf.text.Paragraph(producto.codigo,
+                        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+                            PdfPCell cell = new PdfPCell();
+                            cell.setBorder(Rectangle.BOX);
+                            cell.setBorderWidth(0.5f);
+                            cell.setPadding(3);
+                            cell.setFixedHeight(cellHeight);
+                            cell.setHorizontalAlignment(
+                                    com.itextpdf.text.Element.ALIGN_CENTER);
+                            cell.setVerticalAlignment(
+                                    com.itextpdf.text.Element.ALIGN_MIDDLE);
+
+                            ImageIO.write(producto.imagen, "PNG", baos);
+                            Image img = Image.getInstance(baos.toByteArray());
+                            img.scaleToFit(40, 15);
+                            img.setAlignment(
+                                    com.itextpdf.text.Element.ALIGN_CENTER);
+
+                            // -------- NOMBRE MÁS PEQUEÑO --------
+                            com.itextpdf.text.Font nombreFont = FontFactory.getFont(
+                                    FontFactory.HELVETICA,
+                                    4.2f,
+                                    com.itextpdf.text.Font.NORMAL);
+
+                            Paragraph nombreParrafo = new Paragraph(producto.nombre, nombreFont);
+                            nombreParrafo.setAlignment(
+                                    com.itextpdf.text.Element.ALIGN_CENTER);
+
+                            // -------- PRECIO MÁS PEQUEÑO Y NEGRITA --------
+                            Paragraph precioParrafo = null;
+                            if (producto.precio != null && !producto.precio.isEmpty()) {
+
+                                com.itextpdf.text.Font precioFont = FontFactory.getFont(
+                                        FontFactory.HELVETICA_BOLD,
+                                        4.2f,
+                                        com.itextpdf.text.Font.BOLD);
+
+                                precioParrafo = new Paragraph(producto.precio, precioFont);
+                                precioParrafo.setAlignment(
+                                        com.itextpdf.text.Element.ALIGN_CENTER);
+                            }
+
+                            // -------- CÓDIGO (SIN CAMBIOS) --------
+                            Paragraph codigoTextoParrafo = null;
+                            if (producto.codigoTexto != null &&
+                                    !producto.codigoTexto.isEmpty()) {
+
+                                com.itextpdf.text.Font codigoFont = FontFactory.getFont(
+                                        FontFactory.HELVETICA_BOLD,
+                                        8f,
+                                        com.itextpdf.text.Font.NORMAL);
+
+                                codigoTextoParrafo = new Paragraph(
+                                        "COD: " + producto.codigoTexto,
                                         codigoFont);
-                                codigo.setAlignment(com.itextpdf.text.Element.ALIGN_CENTER);
-
-                                // Agregar elementos a la celda en orden correcto
-                                cell.addElement(nombre);
-
-                                // Agregar precio si existe
-                                if (precioParrafo != null) {
-                                    cell.addElement(precioParrafo);
-                                }
-
-                                cell.addElement(img);
-                                cell.addElement(codigo);
-                                table.addCell(cell);
-
-                            } catch (Exception e) {
-                                System.err.println("Error procesando producto: " + producto.nombre);
-                                e.printStackTrace();
+                                codigoTextoParrafo.setAlignment(
+                                        com.itextpdf.text.Element.ALIGN_CENTER);
                             }
-                        }
 
-                        int celdasFaltantes = numColumnas - (productosValidos.size() % numColumnas);
-                        if (celdasFaltantes < numColumnas && celdasFaltantes > 0) {
-                            for (int i = 0; i < celdasFaltantes; i++) {
-                                PdfPCell emptyCell = new PdfPCell();
-                                emptyCell.setBorder(Rectangle.BOX);
-                                emptyCell.setBorderWidth(0.5f);
-                                table.addCell(emptyCell);
+                            PdfPTable innerTable = new PdfPTable(1);
+                            innerTable.setWidthPercentage(100);
+                            innerTable.setHorizontalAlignment(
+                                    com.itextpdf.text.Element.ALIGN_CENTER);
+
+                            PdfPCell nombreCell = new PdfPCell(nombreParrafo);
+                            nombreCell.setBorder(Rectangle.NO_BORDER);
+                            nombreCell.setHorizontalAlignment(
+                                    com.itextpdf.text.Element.ALIGN_CENTER);
+                            innerTable.addCell(nombreCell);
+
+                            if (precioParrafo != null) {
+                                PdfPCell precioCell = new PdfPCell(precioParrafo);
+                                precioCell.setBorder(Rectangle.NO_BORDER);
+                                precioCell.setHorizontalAlignment(
+                                        com.itextpdf.text.Element.ALIGN_CENTER);
+                                innerTable.addCell(precioCell);
                             }
-                        }
 
-                        document.add(table);
-                        document.close();
+                            PdfPCell imageCell = new PdfPCell();
+                            imageCell.setBorder(Rectangle.NO_BORDER);
+                            imageCell.setHorizontalAlignment(
+                                    com.itextpdf.text.Element.ALIGN_CENTER);
+                            imageCell.addElement(img);
+                            innerTable.addCell(imageCell);
 
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(GeneradorGU.this,
-                                    "PDF generado exitosamente en:\n" + finalFile.getAbsolutePath(),
-                                    "PDF Generado", JOptionPane.INFORMATION_MESSAGE);
-                        });
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(GeneradorGU.this,
-                                    "Error al generar PDF: " + e.getMessage(),
-                                    "Error", JOptionPane.ERROR_MESSAGE);
-                        });
-                    } finally {
-                        try {
-                            if (fos != null) {
-                                fos.close();
+                            if (codigoTextoParrafo != null) {
+                                PdfPCell codigoCell = new PdfPCell(codigoTextoParrafo);
+                                codigoCell.setBorder(Rectangle.NO_BORDER);
+                                codigoCell.setHorizontalAlignment(
+                                        com.itextpdf.text.Element.ALIGN_CENTER);
+                                innerTable.addCell(codigoCell);
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
+
+                            cell.addElement(innerTable);
+                            table.addCell(cell);
                         }
                     }
-                    return null;
+
+                    int resto = productosValidos.size() % numColumnas;
+                    if (resto > 0) {
+                        for (int i = 0; i < numColumnas - resto; i++) {
+                            PdfPCell emptyCell = new PdfPCell();
+                            emptyCell.setBorder(Rectangle.BOX);
+                            emptyCell.setBorderWidth(0.5f);
+                            emptyCell.setFixedHeight(cellHeight);
+                            table.addCell(emptyCell);
+                        }
+                    }
+
+                    document.add(table);
+                    document.close();
+
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                            GeneradorGU.this,
+                            "PDF generado correctamente:\n" +
+                                    finalFile.getAbsolutePath(),
+                            "PDF",
+                            JOptionPane.INFORMATION_MESSAGE));
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        if (fos != null)
+                            fos.close();
+                    } catch (IOException ignored) {
+                    }
                 }
 
-                @Override
-                protected void done() {
-                    progressBar.setVisible(false);
-                }
-            }.execute();
-        }
-    }
+                return null;
+            }
 
-    public String resumirTexto(String texto, int maxPalabras) {
-        String[] palabras = texto.trim().split("\\s+");
-        if (palabras.length <= maxPalabras) {
-            return texto;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < maxPalabras; i++) {
-            sb.append(palabras[i]).append(" ");
-        }
-        sb.append("...");
-        return sb.toString().trim();
+            @Override
+            protected void done() {
+                progressBar.setVisible(false);
+            }
+        }.execute();
     }
 
     private void guardarImagen() {
@@ -1175,16 +1131,13 @@ public class GeneradorGU extends JFrame {
             return;
         }
 
-        // Simular progreso
         progressBar.setVisible(true);
         progressBar.setIndeterminate(true);
         progressBar.setString("Guardando imagen...");
 
-        // Usar un hilo separado para guardar la imagen
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
-                // Crear una imagen que combine el código de barras y el número
                 int margenInferior = 40;
                 int ancho = imagenCodigo.getWidth();
                 int alto = imagenCodigo.getHeight() + margenInferior;
@@ -1192,14 +1145,11 @@ public class GeneradorGU extends JFrame {
                 BufferedImage imagenCompleta = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
                 Graphics2D g2d = imagenCompleta.createGraphics();
 
-                // Fondo blanco
                 g2d.setColor(Color.WHITE);
                 g2d.fillRect(0, 0, ancho, alto);
 
-                // Dibujar el código de barras
                 g2d.drawImage(imagenCodigo, 0, 0, null);
 
-                // Dibujar el texto (centrado en la parte inferior)
                 g2d.setColor(Color.BLACK);
                 g2d.setFont(new Font("Arial", Font.BOLD, 16));
                 g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -1211,16 +1161,13 @@ public class GeneradorGU extends JFrame {
 
                 g2d.dispose();
 
-                // Guardar la imagen combinada
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setDialogTitle("Guardar código de barras");
 
-                // Sugerir nombre de archivo
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
                 String fileName = "codigo_barras_" + sdf.format(new Date()) + ".png";
                 fileChooser.setSelectedFile(new File(fileName));
 
-                // Filtro para archivos PNG
                 FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos PNG", "png");
                 fileChooser.setFileFilter(filter);
 
@@ -1250,5 +1197,4 @@ public class GeneradorGU extends JFrame {
             }
         }.execute();
     }
-
 }

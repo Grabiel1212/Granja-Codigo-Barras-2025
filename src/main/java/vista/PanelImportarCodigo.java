@@ -1,21 +1,48 @@
 package vista;
 
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTable;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import org.apache.poi.ss.usermodel.*;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.io.FileInputStream;
-import model.Producto;
+
 import com.google.zxing.BarcodeFormat;
-import java.awt.image.BufferedImage;
+
+import model.Producto;
 import service.GeneradorService;
 
 public class PanelImportarCodigo extends JDialog {
@@ -30,6 +57,7 @@ public class PanelImportarCodigo extends JDialog {
     private GeneradorGU generadorGU;
     private List<Producto> productosImportados = new ArrayList<>();
     private JComboBox<String> cmbColumnaNombre;
+    private JComboBox<String> cmbColumnaCodigoBarras;
     private JComboBox<String> cmbColumnaCodigo;
     private JComboBox<String> cmbColumnaCantidad;
     private JComboBox<String> cmbHojasExcel;
@@ -46,7 +74,6 @@ public class PanelImportarCodigo extends JDialog {
         setLayout(new BorderLayout(10, 10));
 
         // Configurar colores principales
-        // Configurar colores principales
         java.awt.Color colorPrimario = new java.awt.Color(41, 128, 185);
         java.awt.Color colorSecundario = new java.awt.Color(52, 152, 219);
         java.awt.Color colorFondo = new java.awt.Color(245, 245, 245);
@@ -60,8 +87,7 @@ public class PanelImportarCodigo extends JDialog {
         panelSuperior.setBackground(colorFondo);
         panelSuperior.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, colorBorde),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)
-        ));
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -100,8 +126,9 @@ public class PanelImportarCodigo extends JDialog {
         gbc.gridy = 2;
         panelSuperior.add(cmbHojasExcel, gbc);
 
-        // Selector de columna nombre
-        JLabel lblNombre = createStyledLabel("Columna para Nombres:");
+        // Selector de columna nombre (OBLIGATORIO)
+        JLabel lblNombre = createStyledLabel("Columna para Nombres *:");
+        lblNombre.setForeground(java.awt.Color.RED);
         gbc.gridx = 0;
         gbc.gridy = 3;
         panelSuperior.add(lblNombre, gbc);
@@ -112,43 +139,65 @@ public class PanelImportarCodigo extends JDialog {
         gbc.gridy = 3;
         panelSuperior.add(cmbColumnaNombre, gbc);
 
-        // Selector de columna código
-        JLabel lblCodigo = createStyledLabel("Columna para Códigos:");
+        // Selector de columna código de barras (OBLIGATORIO)
+        JLabel lblCodigoBarras = createStyledLabel("Columna para Códigos de Barras *:");
+        lblCodigoBarras.setForeground(java.awt.Color.RED);
         gbc.gridx = 0;
         gbc.gridy = 4;
+        panelSuperior.add(lblCodigoBarras, gbc);
+
+        cmbColumnaCodigoBarras = createStyledComboBox();
+        cmbColumnaCodigoBarras.setEnabled(false);
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        panelSuperior.add(cmbColumnaCodigoBarras, gbc);
+
+        // Selector de columna código de texto (OBLIGATORIO)
+        JLabel lblCodigo = createStyledLabel("Columna para Código Texto *:");
+        lblCodigo.setForeground(java.awt.Color.RED);
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         panelSuperior.add(lblCodigo, gbc);
 
         cmbColumnaCodigo = createStyledComboBox();
         cmbColumnaCodigo.setEnabled(false);
         gbc.gridx = 1;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         panelSuperior.add(cmbColumnaCodigo, gbc);
 
-        // Selector de columna cantidad
+        // Selector de columna cantidad (opcional)
         JLabel lblCantidad = createStyledLabel("Columna para Cantidad (opcional):");
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         panelSuperior.add(lblCantidad, gbc);
 
         cmbColumnaCantidad = createStyledComboBox();
         cmbColumnaCantidad.setEnabled(false);
         cmbColumnaCantidad.addItem("(No usar)");
         gbc.gridx = 1;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         panelSuperior.add(cmbColumnaCantidad, gbc);
 
-        // Selector de columna precio
+        // Selector de columna precio (opcional)
         JLabel lblPrecio = createStyledLabel("Columna para Precio (opcional):");
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         panelSuperior.add(lblPrecio, gbc);
 
         cmbColumnaPrecio = createStyledComboBox();
         cmbColumnaPrecio.setEnabled(false);
         cmbColumnaPrecio.addItem("(No usar)");
         gbc.gridx = 1;
-        gbc.gridy = 6;
+        gbc.gridy = 7;
         panelSuperior.add(cmbColumnaPrecio, gbc);
+
+        // Nota
+        JLabel lblNota = createStyledLabel("* Campos obligatorios");
+        lblNota.setForeground(java.awt.Color.RED);
+        gbc.gridx = 0;
+        gbc.gridy = 8;
+        gbc.gridwidth = 2;
+        panelSuperior.add(lblNota, gbc);
 
         add(panelSuperior, BorderLayout.NORTH);
 
@@ -159,7 +208,7 @@ public class PanelImportarCodigo extends JDialog {
                 if (columnIndex == 0) {
                     return Boolean.class; // Esto hace que aparezcan checkboxes automáticamente
                 }
-                if (columnIndex == 3) {
+                if (columnIndex == 4) {
                     return Integer.class;
                 }
                 return String.class;
@@ -174,6 +223,7 @@ public class PanelImportarCodigo extends JDialog {
         modeloTabla.addColumn("✓");
         modeloTabla.addColumn("Nombre del Producto");
         modeloTabla.addColumn("Código de Barras");
+        modeloTabla.addColumn("Código Texto");
         modeloTabla.addColumn("Cantidad");
         modeloTabla.addColumn("Precio");
 
@@ -182,7 +232,6 @@ public class PanelImportarCodigo extends JDialog {
         // Configurar el renderizador para centrar los checkboxes
         tablaProductos.getColumnModel().getColumn(0).setCellRenderer(new CheckboxRenderer());
 
-        // Personalizar apariencia de la tabla
         // Personalizar apariencia de la tabla
         tablaProductos.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
         tablaProductos.getTableHeader().setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13));
@@ -198,10 +247,11 @@ public class PanelImportarCodigo extends JDialog {
         TableColumnModel columnModel = tablaProductos.getColumnModel();
         columnModel.getColumn(0).setPreferredWidth(40);
         columnModel.getColumn(0).setMaxWidth(50);
-        columnModel.getColumn(1).setPreferredWidth(250);
-        columnModel.getColumn(2).setPreferredWidth(180);
-        columnModel.getColumn(3).setPreferredWidth(80);
-        columnModel.getColumn(4).setPreferredWidth(100);
+        columnModel.getColumn(1).setPreferredWidth(200);
+        columnModel.getColumn(2).setPreferredWidth(150);
+        columnModel.getColumn(3).setPreferredWidth(120);
+        columnModel.getColumn(4).setPreferredWidth(80);
+        columnModel.getColumn(5).setPreferredWidth(100);
 
         JScrollPane scrollPane = new JScrollPane(tablaProductos);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
@@ -212,9 +262,7 @@ public class PanelImportarCodigo extends JDialog {
                         javax.swing.border.TitledBorder.LEFT,
                         javax.swing.border.TitledBorder.TOP,
                         new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 13),
-                        new java.awt.Color(80, 80, 80)
-                )
-        ));
+                        new java.awt.Color(80, 80, 80))));
         scrollPane.getViewport().setBackground(java.awt.Color.WHITE);
 
         add(scrollPane, BorderLayout.CENTER);
@@ -224,8 +272,7 @@ public class PanelImportarCodigo extends JDialog {
         panelInferior.setBackground(colorFondo);
         panelInferior.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, colorBorde),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
         // Botones con estilo consistente
         btnSeleccionarTodos = createStyledButton("Seleccionar Todos", new java.awt.Color(39, 174, 96));
@@ -245,6 +292,7 @@ public class PanelImportarCodigo extends JDialog {
         btnCargarExcel.addActionListener(e -> cargarExcel());
         cmbHojasExcel.addActionListener(e -> cambiarHoja());
         cmbColumnaNombre.addActionListener(e -> actualizarVistaPrevia());
+        cmbColumnaCodigoBarras.addActionListener(e -> actualizarVistaPrevia());
         cmbColumnaCodigo.addActionListener(e -> actualizarVistaPrevia());
         cmbColumnaCantidad.addActionListener(e -> actualizarVistaPrevia());
         cmbColumnaPrecio.addActionListener(e -> actualizarVistaPrevia());
@@ -298,8 +346,7 @@ public class PanelImportarCodigo extends JDialog {
         button.setFocusPainted(false);
         button.setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createLineBorder(bgColor.darker(), 1),
-                javax.swing.BorderFactory.createEmptyBorder(8, 16, 8, 16)
-        ));
+                javax.swing.BorderFactory.createEmptyBorder(8, 16, 8, 16)));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Efecto hover
@@ -319,7 +366,6 @@ public class PanelImportarCodigo extends JDialog {
     }
 
     // Método para crear etiquetas con estilo
-    // Método para crear etiquetas con estilo
     private javax.swing.JLabel createStyledLabel(String text) {
         javax.swing.JLabel label = new javax.swing.JLabel(text);
         label.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
@@ -327,20 +373,17 @@ public class PanelImportarCodigo extends JDialog {
         return label;
     }
 
-// Método para crear combos con estilo
+    // Método para crear combos con estilo
     private javax.swing.JComboBox<String> createStyledComboBox() {
         javax.swing.JComboBox<String> combo = new javax.swing.JComboBox<>();
         combo.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12));
         combo.setBackground(java.awt.Color.WHITE);
         combo.setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createLineBorder(new java.awt.Color(200, 200, 200)),
-                javax.swing.BorderFactory.createEmptyBorder(4, 6, 4, 6)
-        ));
+                javax.swing.BorderFactory.createEmptyBorder(4, 6, 4, 6)));
         return combo;
     }
 
-    // Los métodos restantes (cargarExcel, cambiarHoja, actualizarVistaPrevia, etc.)
-    // se mantienen exactamente igual que en tu código original
     private void cargarExcel() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new FileNameExtensionFilter("Archivos Excel (.xlsx)", "xlsx"));
@@ -349,6 +392,7 @@ public class PanelImportarCodigo extends JDialog {
             File archivo = fileChooser.getSelectedFile();
             modeloTabla.setRowCount(0);
             cmbColumnaNombre.removeAllItems();
+            cmbColumnaCodigoBarras.removeAllItems();
             cmbColumnaCodigo.removeAllItems();
             cmbColumnaCantidad.removeAllItems();
             cmbHojasExcel.removeAllItems();
@@ -388,6 +432,7 @@ public class PanelImportarCodigo extends JDialog {
             Row headerRow = sheet.getRow(0);
             cabecerasExcel.clear();
             cmbColumnaNombre.removeAllItems();
+            cmbColumnaCodigoBarras.removeAllItems();
             cmbColumnaCodigo.removeAllItems();
             cmbColumnaCantidad.removeAllItems();
             cmbColumnaPrecio.removeAllItems();
@@ -401,12 +446,14 @@ public class PanelImportarCodigo extends JDialog {
 
             for (String cabecera : cabecerasExcel) {
                 cmbColumnaNombre.addItem(cabecera);
+                cmbColumnaCodigoBarras.addItem(cabecera);
                 cmbColumnaCodigo.addItem(cabecera);
                 cmbColumnaCantidad.addItem(cabecera);
                 cmbColumnaPrecio.addItem(cabecera);
             }
 
             cmbColumnaNombre.setEnabled(true);
+            cmbColumnaCodigoBarras.setEnabled(true);
             cmbColumnaCodigo.setEnabled(true);
             cmbColumnaCantidad.setEnabled(true);
             cmbColumnaPrecio.setEnabled(true);
@@ -422,6 +469,7 @@ public class PanelImportarCodigo extends JDialog {
     private void actualizarVistaPrevia() {
         if (sheet == null
                 || cmbColumnaNombre.getSelectedIndex() < 0
+                || cmbColumnaCodigoBarras.getSelectedIndex() < 0
                 || cmbColumnaCodigo.getSelectedIndex() < 0) {
             return;
         }
@@ -429,7 +477,8 @@ public class PanelImportarCodigo extends JDialog {
         modeloTabla.setRowCount(0);
 
         int nombreColIndex = cmbColumnaNombre.getSelectedIndex();
-        int codigoColIndex = cmbColumnaCodigo.getSelectedIndex();
+        int codigoBarrasColIndex = cmbColumnaCodigoBarras.getSelectedIndex();
+        int codigoTextoColIndex = cmbColumnaCodigo.getSelectedIndex();
         int cantidadColIndex = -1;
         int precioColIndex = -1;
 
@@ -450,14 +499,18 @@ public class PanelImportarCodigo extends JDialog {
             }
 
             Cell nombreCell = row.getCell(nombreColIndex);
-            Cell codigoCell = row.getCell(codigoColIndex);
+            Cell codigoBarrasCell = row.getCell(codigoBarrasColIndex);
+            Cell codigoTextoCell = row.getCell(codigoTextoColIndex);
             Cell cantidadCell = (cantidadColIndex >= 0 && cantidadColIndex < row.getLastCellNum())
-                    ? row.getCell(cantidadColIndex) : null;
+                    ? row.getCell(cantidadColIndex)
+                    : null;
             Cell precioCell = (precioColIndex >= 0 && precioColIndex < row.getLastCellNum())
-                    ? row.getCell(precioColIndex) : null;
+                    ? row.getCell(precioColIndex)
+                    : null;
 
             String nombre = (nombreCell != null) ? obtenerValorCelda(nombreCell) : "";
-            String codigo = (codigoCell != null) ? obtenerValorCelda(codigoCell) : "";
+            String codigoBarras = (codigoBarrasCell != null) ? obtenerValorCelda(codigoBarrasCell) : "";
+            String codigoTexto = (codigoTextoCell != null) ? obtenerValorCelda(codigoTextoCell) : "";
             String precio = "";
 
             if (precioCell != null) {
@@ -481,17 +534,18 @@ public class PanelImportarCodigo extends JDialog {
                 }
             }
 
-            if (!nombre.isEmpty() || !codigo.isEmpty()) {
-                modeloTabla.addRow(new Object[]{true, nombre, codigo, cantidad, precio});
+            if (!nombre.isEmpty() || !codigoBarras.isEmpty() || !codigoTexto.isEmpty()) {
+                modeloTabla.addRow(new Object[] { true, nombre, codigoBarras, codigoTexto, cantidad, precio });
             }
         }
 
         tablaProductos.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         TableColumnModel columnModel = tablaProductos.getColumnModel();
-        columnModel.getColumn(1).setPreferredWidth(250);
-        columnModel.getColumn(2).setPreferredWidth(180);
-        columnModel.getColumn(3).setPreferredWidth(80);
-        columnModel.getColumn(4).setPreferredWidth(100);
+        columnModel.getColumn(1).setPreferredWidth(200);
+        columnModel.getColumn(2).setPreferredWidth(150);
+        columnModel.getColumn(3).setPreferredWidth(120);
+        columnModel.getColumn(4).setPreferredWidth(80);
+        columnModel.getColumn(5).setPreferredWidth(100);
     }
 
     private String obtenerValorCelda(Cell cell) {
@@ -506,6 +560,16 @@ public class PanelImportarCodigo extends JDialog {
     }
 
     private void importarProductos() {
+        // Validar que se hayan seleccionado las columnas obligatorias
+        if (cmbColumnaNombre.getSelectedIndex() < 0 ||
+                cmbColumnaCodigoBarras.getSelectedIndex() < 0 ||
+                cmbColumnaCodigo.getSelectedIndex() < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Debe seleccionar las columnas obligatorias: Nombre, Código de Barras y Código Texto",
+                    "Validación", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (modeloTabla.getRowCount() == 0) {
             JOptionPane.showMessageDialog(this,
                     "No hay datos para importar",
@@ -522,11 +586,12 @@ public class PanelImportarCodigo extends JDialog {
         for (int i = 0; i < modeloTabla.getRowCount(); i++) {
             if ((Boolean) modeloTabla.getValueAt(i, 0)) {
                 String nombre = (String) modeloTabla.getValueAt(i, 1);
-                String codigo = (String) modeloTabla.getValueAt(i, 2);
-                String precio = (String) modeloTabla.getValueAt(i, 4);
+                String codigoBarras = (String) modeloTabla.getValueAt(i, 2);
+                String codigoTexto = (String) modeloTabla.getValueAt(i, 3);
+                String precio = (String) modeloTabla.getValueAt(i, 5);
                 int cantidad = 1;
 
-                Object cantidadObj = modeloTabla.getValueAt(i, 3);
+                Object cantidadObj = modeloTabla.getValueAt(i, 4);
                 if (cantidadObj instanceof Integer) {
                     cantidad = (Integer) cantidadObj;
                 } else if (cantidadObj instanceof String) {
@@ -540,20 +605,27 @@ public class PanelImportarCodigo extends JDialog {
                 int filaExcel = i + 2;
 
                 try {
-                    if (codigo == null || codigo.trim().isEmpty()) {
-                        throw new Exception("Código vacío");
+                    if (codigoBarras == null || codigoBarras.trim().isEmpty()) {
+                        throw new Exception("Código de barras vacío");
+                    }
+
+                    if (codigoTexto == null || codigoTexto.trim().isEmpty()) {
+                        throw new Exception("Código de texto vacío");
                     }
 
                     BufferedImage imagen = servicio.generarImagenCodigo(
-                            codigo, BarcodeFormat.CODE_128, 350, 120
-                    );
+                            codigoBarras, BarcodeFormat.CODE_128, 350, 120);
 
                     if (imagen == null) {
-                        throw new Exception("Error generando imagen");
+                        throw new Exception("Error generando imagen de código de barras");
                     }
 
                     for (int j = 0; j < cantidad; j++) {
-                        productosImportados.add(new Producto(nombre, codigo, imagen, BarcodeFormat.CODE_128, precio));
+                        // Crear producto con todos los datos incluyendo el código de texto
+                        // Usamos el constructor extendido que acepta códigoTexto
+                        Producto producto = new Producto(nombre, codigoBarras, codigoTexto, imagen,
+                                BarcodeFormat.CODE_128, precio);
+                        productosImportados.add(producto);
                         contador++;
                     }
                 } catch (Exception ex) {
@@ -578,8 +650,8 @@ public class PanelImportarCodigo extends JDialog {
         if (errores > 0) {
             JOptionPane.showMessageDialog(this,
                     "Importación completada con errores:\n"
-                    + "• Productos importados: " + contador + "\n"
-                    + "• Errores: " + errores + erroresDetalle.toString(),
+                            + "• Productos importados: " + contador + "\n"
+                            + "• Errores: " + errores + erroresDetalle.toString(),
                     "Resultado de Importación",
                     JOptionPane.WARNING_MESSAGE);
         } else if (contador > 0) {
