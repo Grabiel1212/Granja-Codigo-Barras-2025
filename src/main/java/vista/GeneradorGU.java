@@ -979,7 +979,6 @@ public class GeneradorGU extends JFrame {
                     table.setSpacingAfter(10);
                     table.setWidths(new float[] { 1f, 1f, 1f, 1f });
 
-                    // 🔹 ALTURA UN POCO MÁS BAJA
                     float cellHeight = 54f;
 
                     for (Producto producto : productosValidos) {
@@ -998,27 +997,27 @@ public class GeneradorGU extends JFrame {
 
                             ImageIO.write(producto.imagen, "PNG", baos);
                             Image img = Image.getInstance(baos.toByteArray());
-                            img.scaleToFit(40, 15);
+                            img.scaleToFit(55, 22); // ✅ PERFECTO – NO TOCAR
                             img.setAlignment(
                                     com.itextpdf.text.Element.ALIGN_CENTER);
 
-                            // -------- NOMBRE MÁS PEQUEÑO --------
+                            // -------- NOMBRE --------
                             com.itextpdf.text.Font nombreFont = FontFactory.getFont(
                                     FontFactory.HELVETICA,
-                                    4.2f,
+                                    3.6f,
                                     com.itextpdf.text.Font.NORMAL);
 
                             Paragraph nombreParrafo = new Paragraph(producto.nombre, nombreFont);
                             nombreParrafo.setAlignment(
                                     com.itextpdf.text.Element.ALIGN_CENTER);
 
-                            // -------- PRECIO MÁS PEQUEÑO Y NEGRITA --------
+                            // -------- PRECIO --------
                             Paragraph precioParrafo = null;
                             if (producto.precio != null && !producto.precio.isEmpty()) {
 
                                 com.itextpdf.text.Font precioFont = FontFactory.getFont(
                                         FontFactory.HELVETICA_BOLD,
-                                        4.2f,
+                                        3.6f,
                                         com.itextpdf.text.Font.BOLD);
 
                                 precioParrafo = new Paragraph(producto.precio, precioFont);
@@ -1026,14 +1025,14 @@ public class GeneradorGU extends JFrame {
                                         com.itextpdf.text.Element.ALIGN_CENTER);
                             }
 
-                            // -------- CÓDIGO (SIN CAMBIOS) --------
+                            // -------- CÓDIGO TEXTO (RESTAURADO + MÁS CHICO) --------
                             Paragraph codigoTextoParrafo = null;
                             if (producto.codigoTexto != null &&
                                     !producto.codigoTexto.isEmpty()) {
 
                                 com.itextpdf.text.Font codigoFont = FontFactory.getFont(
                                         FontFactory.HELVETICA_BOLD,
-                                        8f,
+                                        8.2f, // 🔹 un poquito más chico
                                         com.itextpdf.text.Font.NORMAL);
 
                                 codigoTextoParrafo = new Paragraph(
@@ -1052,6 +1051,7 @@ public class GeneradorGU extends JFrame {
                             nombreCell.setBorder(Rectangle.NO_BORDER);
                             nombreCell.setHorizontalAlignment(
                                     com.itextpdf.text.Element.ALIGN_CENTER);
+                            nombreCell.setPaddingBottom(0.5f);
                             innerTable.addCell(nombreCell);
 
                             if (precioParrafo != null) {
@@ -1059,6 +1059,7 @@ public class GeneradorGU extends JFrame {
                                 precioCell.setBorder(Rectangle.NO_BORDER);
                                 precioCell.setHorizontalAlignment(
                                         com.itextpdf.text.Element.ALIGN_CENTER);
+                                precioCell.setPaddingBottom(0.5f);
                                 innerTable.addCell(precioCell);
                             }
 
@@ -1069,6 +1070,7 @@ public class GeneradorGU extends JFrame {
                             imageCell.addElement(img);
                             innerTable.addCell(imageCell);
 
+                            // ✅ COD TEXTO DEBAJO DE LA IMAGEN
                             if (codigoTextoParrafo != null) {
                                 PdfPCell codigoCell = new PdfPCell(codigoTextoParrafo);
                                 codigoCell.setBorder(Rectangle.NO_BORDER);
@@ -1098,8 +1100,8 @@ public class GeneradorGU extends JFrame {
 
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             GeneradorGU.this,
-                            "PDF generado correctamente:\n" +
-                                    finalFile.getAbsolutePath(),
+                            "PDF generado correctamente:\n"
+                                    + finalFile.getAbsolutePath(),
                             "PDF",
                             JOptionPane.INFORMATION_MESSAGE));
 
