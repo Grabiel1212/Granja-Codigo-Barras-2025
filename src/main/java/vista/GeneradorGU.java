@@ -997,7 +997,8 @@ public class GeneradorGU extends JFrame {
 
                             ImageIO.write(producto.imagen, "PNG", baos);
                             Image img = Image.getInstance(baos.toByteArray());
-                            img.scaleToFit(55, 22); // ✅ PERFECTO – NO TOCAR
+                    img.scaleToFit(58, 23);
+
                             img.setAlignment(
                                     com.itextpdf.text.Element.ALIGN_CENTER);
 
@@ -1018,7 +1019,7 @@ public class GeneradorGU extends JFrame {
                                 com.itextpdf.text.Font precioFont = FontFactory.getFont(
                                         FontFactory.HELVETICA_BOLD,
                                         3.6f,
-                                        com.itextpdf.text.Font.BOLD);
+                                        com.itextpdf.text.Font.NORMAL);
 
                                 precioParrafo = new Paragraph(producto.precio, precioFont);
                                 precioParrafo.setAlignment(
@@ -1032,7 +1033,7 @@ public class GeneradorGU extends JFrame {
 
                                 com.itextpdf.text.Font codigoFont = FontFactory.getFont(
                                         FontFactory.HELVETICA_BOLD,
-                                        8.2f, // 🔹 un poquito más chico
+                                        7.0f, // 🔹 un poquito más chico
                                         com.itextpdf.text.Font.NORMAL);
 
                                 codigoTextoParrafo = new Paragraph(
